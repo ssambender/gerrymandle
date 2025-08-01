@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Gerrymandle</title>
     <style>
-        root {
-            --gray-select: #e8e8e8;
-            --red-select: #eeb5ae;
-            --blue-select: #aed1ee;
-        }
-
         body {
             font-family: sans-serif;
             background: #ffffff;
@@ -50,17 +44,20 @@
             color: #333;
             cursor: pointer;
             user-select: none;
-        }
-        .tile .red {
-            color: red;
-        }
-        .tile .blue {
-            color: blue;
+            /*transition: background-color 0.2s ease;*/
         }
 
         .tile.selected {
             background: #e8e8e8;
-            /*border-color: var(--gray-select);*/
+        }
+        .tile.selected-red {
+            background: #eeb5ae;
+        }
+        .tile.selected-blue {
+            background: #aed1ee;
+        }
+        .tile.selected-purple {
+            background: #ddc6ea;
         }
 
         #line-canvas {
@@ -85,7 +82,7 @@
     </style>
 </head>
 <body>
-    <h2 id="puzzle-info">6 districts of 8</h2>
+    <h2 id="puzzle-info">?? districts of ??</h2>
 
     <div id="board-container">
         <canvas id="line-canvas" width="460" height="620"></canvas>
@@ -140,7 +137,18 @@
         function drawLines() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (path.length < 2) return;
-            ctx.strokeStyle = "#e8e8e8";
+
+            const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
+
+            let strokeColor = "#e8e8e8"; // default gray
+
+            if (currentWord.length >= currentVoteCount) {
+                strokeColor = finalizePathColor();  // apply final result
+            } else {
+                clearPathColoring();  // remove any result-based styles
+            }
+
+            ctx.strokeStyle = strokeColor;
             ctx.lineWidth = 16;
             ctx.beginPath();
             const start = getTileCenter(path[0]);
@@ -152,6 +160,7 @@
             ctx.stroke();
         }
 
+
         function areAdjacent(tile1, tile2) {
             const r1 = +tile1.dataset.row;
             const c1 = +tile1.dataset.col;
@@ -161,9 +170,17 @@
         }
 
         function clearPath() {
-            path.forEach(t => t.classList.remove("selected"));
+            path.forEach(t => {
+                t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+            });
             path = [];
             drawLines();
+        }
+
+        function clearPathColoring() {
+            path.forEach(t => {
+                t.classList.remove("selected-red", "selected-blue", "selected-purple");
+            });
         }
 
         // Generate board from levelData
@@ -210,7 +227,7 @@
             // Allow retreating
             if (secondLast === currentTile) {
                 const removed = path.pop();
-                removed.classList.remove("selected");
+                removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
                 drawLines();
                 return;
             }
@@ -234,8 +251,6 @@
             }
         });
 
-
-
         window.addEventListener("mouseup", () => {
             if (path.length > 0) {
                 const word = path.map(t => t.textContent).join("");
@@ -248,6 +263,32 @@
         window.addEventListener("mouseleave", () => {
             isMouseDown = false;
         });
+
+        function finalizePathColor() {
+            const votes = path.map(t => t.textContent);
+            const rCount = votes.filter(v => v === "R").length;
+            const bCount = votes.filter(v => v === "B").length;
+
+            let color = "#e8e8e8"; // default gray
+
+            // Remove prior result-based selection classes
+            path.forEach(t => {
+                t.classList.remove("selected-red", "selected-blue", "selected-purple");
+            });
+
+            if (rCount > bCount) {
+                color = "#eeb5ae";
+                path.forEach(t => t.classList.add("selected-red"));
+            } else if (bCount > rCount) {
+                color = "#aed1ee";
+                path.forEach(t => t.classList.add("selected-blue"));
+            } else {
+                color = "#ddc6ea";
+                path.forEach(t => t.classList.add("selected-purple"));
+            }
+
+            return color;
+        }
 
         window.addEventListener("resize", drawLines);
     </script>
