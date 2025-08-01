@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Gerrymandle</title>
+    <link rel="icon" href="https://em-content.zobj.net/source/joypixels/275/flag-united-states_1f1fa-1f1f8.png">
     <style>
         body {
             font-family: sans-serif;
@@ -68,6 +69,19 @@
             pointer-events: none;
         }
 
+        #madebysam {
+            color: #333333;
+            cursor: pointer;
+            margin-top: 48px;
+            padding-bottom: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+        #madebysam:hover {
+            text-decoration: underline;
+        }
+
         @keyframes pop {
             0%   { transform: scale(1); }
             30%  { transform: scale(1.1); }
@@ -85,22 +99,39 @@
     </style>
 </head>
 <body>
-<h2 id="puzzle-info">6 districts of 8</h2>
 
-<div id="board-container">
-    <canvas id="line-canvas" width="460" height="620"></canvas>
-    <div id="board"></div>
+<div style="width: 100%; height: 20vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
+    <img src="logo.png" height="70px" style="padding-bottom: 20px;">
+</div>
+<div style="width: 100%; height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center">
+    <h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
+    <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: #333333;"><b style="color: #5988d1">17</b> - <b style="color: #e05353">13</b>. Help red win!</h3>
+    <div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: #e8e8e8; display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
+    <div id="board-container">
+        <canvas id="line-canvas" width="460" height="620"></canvas>
+        <div id="board"></div>
+    </div>
+</div>
+<div style="width: 100%; height: 20vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
+    <a id="madebysam" href="https://sambender.net">
+        Made with ❤️ by Sam Bender
+    </a>
 </div>
 
 <script>
+    //todo - add 3 divs from top to bottom (20%, 80%, 20%) for heading, main, and footer
+    //todo - heading will have title, footer will have instructions and site link
+
+    //todo - add a live count that shows num of each color district, and show total starting votes per color
+
     const boardCols = 6;
     const boardRows = 8;
 
-    let currentDistrictCount = 6;
-    let currentVoteCount = 8;
+    let currentDistrictCount = 5;
+    let currentVoteCount = 6;
 
-    const levelData = [
-        "R", "R", "R", "R", "R", "R",
+    const levelData1 = [
+        "R", "R", "R", "R", "R", "R", //6x8 works, 3x16 works
         "R", "R", "R", "R", "R", "R",
         "B", "B", "B", "B", "R", "R",
         "B", "B", "B", "B", "B", "R",
@@ -108,6 +139,28 @@
         "B", "B", "B", "B", "B", "R",
         "B", "B", "B", "B", "B", "R",
         "B", "B", "B", "B", "B", "R"
+    ];
+
+    const levelData = [
+        " ", "R", " ", "B", "B", " ", //5x6
+        "R", "B", "B", "R", "B", "R",
+        "B", "R", "B", "B", "R", " ",
+        " ", "B", "R", "B", "O", "B",
+        "R", "O", "R", "B", "B", " ",
+        "R", "B", "R", " ", "R", "B",
+        " ", "R", "B", "B", "O", " ",
+        " ", " ", " ", " ", " ", " "
+    ];
+
+    const levelData2 = [
+        " ", " ", " ", " ", " ", " ", //5x3 works
+        " ", " ", "B", " ", "B", "B",
+        " ", "R", "R", "O", "O", " ",
+        " ", "R", "B", "B", " ", " ",
+        " ", "R", "R", " ", " ", " ",
+        "B", "R", "B", " ", " ", " ",
+        " ", "B", "B", " ", " ", " ",
+        " ", " ", " ", " ", " ", " "
     ];
 
     const board = document.getElementById("board");
@@ -121,7 +174,43 @@
     function setInfo() {
         document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;
     }
+    function updateVoteTotals() {
+        const rTotal = levelData.filter(cell => cell === "R").length;
+        const bTotal = levelData.filter(cell => cell === "B").length;
+
+        const subInfo = document.getElementById('puzzle-subinfo');
+        subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help red win!`;
+    }
     setInfo();
+    updateVoteTotals();
+
+    function updateDistrictBar() {
+        const bar = document.getElementById("puzzle-districtbar");
+        bar.innerHTML = ""; // Clear previous segments
+
+        const total = currentDistrictCount;
+        let red = 0, blue = 0, purple = 0;
+
+        finalizedDistricts.forEach(d => {
+            if (d.colorClass === "selected-red") red++;
+            else if (d.colorClass === "selected-blue") blue++;
+            else if (d.colorClass === "selected-purple") purple++;
+        });
+
+        const makeSegment = (fraction, color) => {
+            if (fraction <= 0) return;
+            const segment = document.createElement("div");
+            segment.style.width = `${(fraction / total) * 100}%`;
+            segment.style.background = color;
+            segment.style.height = "100%";
+            bar.appendChild(segment);
+        };
+
+        makeSegment(red, "#eeb5ae");
+        makeSegment(blue, "#aed1ee");
+        makeSegment(purple, "#ddc6ea");
+        makeSegment(total - red - blue - purple, "#e8e8e8"); // Remaining/empty
+    }
 
     function getTileCenter(tile) {
         const rect = tile.getBoundingClientRect();
@@ -160,7 +249,12 @@
             t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
         });
 
-        if (path.length >= currentVoteCount) {
+        const voteCount = path.filter(t => {
+            const val = t.textContent.trim();
+            return val === "R" || val === "B";
+        }).length;
+
+        if (voteCount >= currentVoteCount) {
             // Apply matching color class
             if (rCount > bCount) {
                 path.forEach(t => t.classList.add("selected-red"));
@@ -188,16 +282,18 @@
         // Draw current path line if any
         if (path.length < 2) return;
 
-        const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
+        const voteCount = path.filter(t => {
+            const val = t.textContent.trim();
+            return val === "R" || val === "B";
+        }).length;
 
-        if (currentWord.length >= currentVoteCount) {
-            // When full length color line according to votes
+        if (voteCount >= currentVoteCount) {
             const strokeColor = finalizePathColor();
             drawPathLines(path, strokeColor);
         } else {
-            // otherwise default gray line
             drawPathLines(path, "#e8e8e8");
         }
+
     }
 
     // get stroke color string for given tile class
@@ -215,8 +311,40 @@
         const c1 = +tile1.dataset.col;
         const r2 = +tile2.dataset.row;
         const c2 = +tile2.dataset.col;
-        return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
+
+        const rowDiff = r2 - r1;
+        const colDiff = c2 - c1;
+
+        const absRow = Math.abs(rowDiff);
+        const absCol = Math.abs(colDiff);
+
+        if (absRow > 1 || absCol > 1 || (absRow === 0 && absCol === 0)) return false;
+
+        // Diagonal move
+        if (absRow === 1 && absCol === 1) {
+            const midTileA = document.querySelector(`[data-row="${r1}"][data-col="${c2}"]`);
+            const midTileB = document.querySelector(`[data-row="${r2}"][data-col="${c1}"]`);
+
+            // Check if either of the mid-tiles are connected by a finalized district
+            for (const district of finalizedDistricts) {
+                if (
+                    midTileA && midTileB &&
+                    district.tiles.includes(midTileA) &&
+                    district.tiles.includes(midTileB)
+                ) {
+                    // They're both in a district — check if they're directly connected
+                    const idxA = district.tiles.indexOf(midTileA);
+                    const idxB = district.tiles.indexOf(midTileB);
+                    if (Math.abs(idxA - idxB) === 1) {
+                        return false; // A connector exists — block diagonal
+                    }
+                }
+            }
+        }
+
+        return true;
     }
+
 
     function clearPath() {
         path.forEach(t => {
@@ -256,6 +384,8 @@
                 });
                 console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
 
+                updateDistrictBar();
+
                 break;
             }
         }
@@ -272,6 +402,7 @@
             tile.textContent = letter;
             if (letter === "B") tile.style.color = "#5988d1";
             if (letter === "R") tile.style.color = "#e05353";
+            if (letter === "O") tile.style.color = "#dadada";
 
             tile.dataset.row = row;
             tile.dataset.col = col;
@@ -291,6 +422,7 @@
     board.addEventListener("mousedown", (e) => {
         if (!e.target.classList.contains("tile")) return;
         if (isTileFinalized(e.target)) return;
+        if (e.target.textContent.trim() === "") return;  //prevents selecting blank spaces
 
         clearPath();
         isMouseDown = true;
@@ -310,6 +442,8 @@
         if (isTileFinalized(e.target)) return;
 
         const currentTile = e.target;
+        if (currentTile.textContent.trim() === "") return;  //prevents selecting blank spaces
+
         const last = path[path.length - 1];
         const secondLast = path[path.length - 2];
 
@@ -322,8 +456,12 @@
             return;
         }
 
-        const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
-        const atLimit = currentWord.length >= currentVoteCount;
+        const voteCount = path.filter(t => {
+            const val = t.textContent.trim();
+            return val === "R" || val === "B";
+        }).length;
+
+        const atLimit = voteCount >= currentVoteCount;
 
         if (atLimit) return;
 
@@ -344,7 +482,12 @@
             const word = path.map(t => t.textContent).join("");
             // console.log("Selected word:", word);
 
-            if (word.replace(/ /g,'').length === currentVoteCount) {
+            const voteCount = path.filter(t => {
+                const val = t.textContent.trim();
+                return val === "R" || val === "B";
+            }).length;
+
+            if (voteCount === currentVoteCount) {
                 // Finalize district
                 const colorClass = getFinalColorClass();
 
@@ -374,6 +517,8 @@
                 });
                 console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
 
+                updateDistrictBar();
+
                 if (finalizedDistricts.length === currentDistrictCount) {
                     console.log("all districts drawn");
                     if (redCount > blueCount) {
@@ -387,6 +532,7 @@
                     }
                     else {
                         console.log("NOT QUITE! LEVEL LOSE!");
+                        // todo - show up "reset?" button
                     }
                 }
 
@@ -405,7 +551,9 @@
     });
 
     function getFinalColorClass() {
-        const votes = path.map(t => t.textContent);
+        const votes = path
+            .map(t => t.textContent)
+            .filter(v => v !== "O");
         const rCount = votes.filter(v => v === "R").length;
         const bCount = votes.filter(v => v === "B").length;
 
@@ -415,7 +563,9 @@
     }
 
     function finalizePathColor() {
-        const votes = path.map(t => t.textContent);
+        const votes = path
+            .map(t => t.textContent)
+            .filter(v => v !== "O");
         const rCount = votes.filter(v => v === "R").length;
         const bCount = votes.filter(v => v === "B").length;
 
