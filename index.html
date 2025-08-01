@@ -73,119 +73,162 @@
     </style>
 </head>
 <body>
-    <h2>Gerrymandle</h2>
+    <h2 id="puzzle-info">6 districts of 8</h2>
 
     <div id="board-container">
         <canvas id="line-canvas" width="460" height="620"></canvas>
         <div id="board"></div>
     </div>
 
-<script>
-    const boardCols = 6;
-    const boardRows = 8;
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const board = document.getElementById("board");
-    const canvas = document.getElementById("line-canvas");
-    const ctx = canvas.getContext("2d");
-    let isMouseDown = false;
-    let path = [];
+    <script>
+        const boardCols = 6;
+        const boardRows = 8;
 
-    function getTileCenter(tile) {
-        const rect = tile.getBoundingClientRect();
-        const parentRect = board.getBoundingClientRect();
-        return {
-            x: rect.left - parentRect.left + rect.width / 2,
-            y: rect.top - parentRect.top + rect.height / 2
-        };
-    }
+        let currentDistrictCount = 6;
+        let currentVoteCount = 8;
 
-    function drawLines() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (path.length < 2) return;
-        ctx.strokeStyle = "#e8e8e8";
-        ctx.lineWidth = 16;
-        ctx.beginPath();
-        const start = getTileCenter(path[0]);
-        ctx.moveTo(start.x, start.y);
-        for (let i = 1; i < path.length; i++) {
-            const point = getTileCenter(path[i]);
-            ctx.lineTo(point.x, point.y);
-        }
-        ctx.stroke();
-    }
+        // Custom level data: 6 x 8 = 48 letters (row-major order)
+        const levelData = [
+            "R", "R", "R", "R", "R", "R",
+            "R", "R", "R", "R", "R", "R",
+            "B", "B", "B", "B", "B", "R",
+            "B", "B", "B", "B", "B", "R",
+            "B", "B", "B", "B", "B", "R",
+            "B", "B", "B", "B", "B", "R",
+            "B", "B", "B", "B", "B", "R",
+            "B", "B", "B", "B", "B", "R"
+        ];
 
-    function areAdjacent(tile1, tile2) {
-        const r1 = +tile1.dataset.row;
-        const c1 = +tile1.dataset.col;
-        const r2 = +tile2.dataset.row;
-        const c2 = +tile2.dataset.col;
-        return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
-    }
+        const board = document.getElementById("board");
+        const canvas = document.getElementById("line-canvas");
+        const ctx = canvas.getContext("2d");
+        let isMouseDown = false;
+        let path = [];
 
-    function clearPath() {
-        path.forEach(t => t.classList.remove("selected"));
-        path = [];
-        drawLines();
-    }
-
-    // Generate board
-    for (let row = 0; row < boardRows; row++) {
-        for (let col = 0; col < boardCols; col++) {
-            const tile = document.createElement("div");
-            tile.classList.add("tile");
-            tile.textContent = letters[Math.floor(Math.random() * letters.length)];
-            tile.dataset.row = row;
-            tile.dataset.col = col;
-            board.appendChild(tile);
-        }
-    }
-
-    board.addEventListener("mousedown", (e) => {
-        if (!e.target.classList.contains("tile")) return;
-        clearPath();
-        isMouseDown = true;
-        e.target.classList.add("selected");
-        path.push(e.target);
-        drawLines();
-    });
-
-    board.addEventListener("mouseover", (e) => {
-        if (!isMouseDown || !e.target.classList.contains("tile")) return;
-
-        const currentTile = e.target;
-        const last = path[path.length - 1];
-        const secondLast = path[path.length - 2];
-
-        // If backtracking, undo last move
-        if (secondLast === currentTile) {
-            const removed = path.pop();
-            removed.classList.remove("selected");
-            drawLines();
-            return;
+        function setInfo() {
+            document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;
         }
 
-        // Addd new tile if adjacent and not already in path
-        if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
-            currentTile.classList.add("selected");
-            path.push(currentTile);
+        // use in future instead of hardcoding levelData
+        function loadMap() {
+            console.log("load map")
+        }
+
+        setInfo();
+
+        function getTileCenter(tile) {
+            const rect = tile.getBoundingClientRect();
+            const parentRect = board.getBoundingClientRect();
+            return {
+                x: rect.left - parentRect.left + rect.width / 2,
+                y: rect.top - parentRect.top + rect.height / 2
+            };
+        }
+
+        function drawLines() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (path.length < 2) return;
+            ctx.strokeStyle = "#e8e8e8";
+            ctx.lineWidth = 16;
+            ctx.beginPath();
+            const start = getTileCenter(path[0]);
+            ctx.moveTo(start.x, start.y);
+            for (let i = 1; i < path.length; i++) {
+                const point = getTileCenter(path[i]);
+                ctx.lineTo(point.x, point.y);
+            }
+            ctx.stroke();
+        }
+
+        function areAdjacent(tile1, tile2) {
+            const r1 = +tile1.dataset.row;
+            const c1 = +tile1.dataset.col;
+            const r2 = +tile2.dataset.row;
+            const c2 = +tile2.dataset.col;
+            return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
+        }
+
+        function clearPath() {
+            path.forEach(t => t.classList.remove("selected"));
+            path = [];
             drawLines();
         }
-    });
 
+        // Generate board from levelData
+        let index = 0;
+        for (let row = 0; row < boardRows; row++) {
+            for (let col = 0; col < boardCols; col++) {
+                const tile = document.createElement("div");
+                tile.classList.add("tile");
 
-    window.addEventListener("mouseup", () => {
-        if (path.length > 0) {
-            const word = path.map(t => t.textContent).join("");
-            console.log("Selected word:", word);
+                const letter = levelData[index] || "";
+                tile.textContent = letter;
+                //tile.textContent = levelData[index] || ""; // || what the space is when left blank
+                if (letter === "B") tile.style.color = "#5988d1";
+                if (letter === "R") tile.style.color = "#e05353";
+
+                tile.dataset.row = row;
+                tile.dataset.col = col;
+                board.appendChild(tile);
+                index++;
+            }
         }
-        isMouseDown = false;
-    });
 
-    window.addEventListener("mouseleave", () => {
-        isMouseDown = false;
-    });
+        board.addEventListener("mousedown", (e) => {
+            if (!e.target.classList.contains("tile")) return;
+            clearPath();
+            isMouseDown = true;
+            e.target.classList.add("selected");
+            path.push(e.target);
+            drawLines();
+        });
 
-    window.addEventListener("resize", drawLines);
-</script>
+        board.addEventListener("mouseover", (e) => {
+            if (!isMouseDown || !e.target.classList.contains("tile")) return;
+
+            const currentTile = e.target;
+            const last = path[path.length - 1];
+            const secondLast = path[path.length - 2];
+
+            // Allow retreating
+            if (secondLast === currentTile) {
+                const removed = path.pop();
+                removed.classList.remove("selected");
+                drawLines();
+                return;
+            }
+
+            // Count non-space tiles only
+            const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
+            const atLimit = currentWord.length >= currentVoteCount;
+
+            // if current connection at limit don't allow add more but still allow retreating
+            if (atLimit) return;
+
+            // Allow forawrd if adjacent and not already in path
+            if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
+                currentTile.classList.add("selected");
+                path.push(currentTile);
+                drawLines();
+            }
+        });
+
+
+
+        window.addEventListener("mouseup", () => {
+            if (path.length > 0) {
+                const word = path.map(t => t.textContent).join("");
+                console.log("Selected word:", word);
+                console.log(word.replace(/ /g,'').length);
+            }
+            isMouseDown = false;
+        });
+
+        window.addEventListener("mouseleave", () => {
+            isMouseDown = false;
+        });
+
+        window.addEventListener("resize", drawLines);
+    </script>
 </body>
 </html>
