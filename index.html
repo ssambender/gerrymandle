@@ -44,9 +44,9 @@
             color: #333;
             cursor: pointer;
             user-select: none;
-            /*transition: background-color 0.2s ease;*/
         }
 
+        /* Highlight classes */
         .tile.selected {
             background: #e8e8e8;
         }
@@ -70,227 +70,363 @@
 
         @keyframes pop {
             0%   { transform: scale(1); }
-            30%  { transform: scale(1.1); }  /* how big to make circle select anim */
+            30%  { transform: scale(1.1); }
             60%  { transform: scale(0.95); }
             100% { transform: scale(1); }
         }
 
         .tile.pop {
-            animation: pop 250ms ease-out;  /* how fast to make circle select anim */
+            animation: pop 250ms ease-out;
         }
-
+        .tile.fade-text {
+            transition: color 1s ease;
+            color: transparent !important;
+        }
     </style>
 </head>
 <body>
-    <h2 id="puzzle-info">?? districts of ??</h2>
+<h2 id="puzzle-info">6 districts of 8</h2>
 
-    <div id="board-container">
-        <canvas id="line-canvas" width="460" height="620"></canvas>
-        <div id="board"></div>
-    </div>
+<div id="board-container">
+    <canvas id="line-canvas" width="460" height="620"></canvas>
+    <div id="board"></div>
+</div>
 
-    <script>
-        const boardCols = 6;
-        const boardRows = 8;
+<script>
+    const boardCols = 6;
+    const boardRows = 8;
 
-        let currentDistrictCount = 6;
-        let currentVoteCount = 8;
+    let currentDistrictCount = 6;
+    let currentVoteCount = 8;
 
-        // Custom level data: 6 x 8 = 48 letters (row-major order)
-        const levelData = [
-            "R", "R", "R", "R", "R", "R",
-            "R", "R", "R", "R", "R", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R"
-        ];
+    const levelData = [
+        "R", "R", "R", "R", "R", "R",
+        "R", "R", "R", "R", "R", "R",
+        "B", "B", "B", "B", "R", "R",
+        "B", "B", "B", "B", "B", "R",
+        "B", "B", "B", "B", "B", "R",
+        "B", "B", "B", "B", "B", "R",
+        "B", "B", "B", "B", "B", "R",
+        "B", "B", "B", "B", "B", "R"
+    ];
 
-        const board = document.getElementById("board");
-        const canvas = document.getElementById("line-canvas");
-        const ctx = canvas.getContext("2d");
-        let isMouseDown = false;
-        let path = [];
+    const board = document.getElementById("board");
+    const canvas = document.getElementById("line-canvas");
+    const ctx = canvas.getContext("2d");
+    let isMouseDown = false;
+    let path = [];
 
-        function setInfo() {
-            document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;
+    let finalizedDistricts = [];
+
+    function setInfo() {
+        document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;
+    }
+    setInfo();
+
+    function getTileCenter(tile) {
+        const rect = tile.getBoundingClientRect();
+        const parentRect = board.getBoundingClientRect();
+        return {
+            x: rect.left - parentRect.left + rect.width / 2,
+            y: rect.top - parentRect.top + rect.height / 2
+        };
+    }
+
+    // Draw lines connecting tiles for given path with specified color and line width
+    function drawPathLines(pathTiles, color, lineWidth = 16) {
+        if (pathTiles.length < 2) return;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        const start = getTileCenter(pathTiles[0]);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < pathTiles.length; i++) {
+            const point = getTileCenter(pathTiles[i]);
+            ctx.lineTo(point.x, point.y);
         }
+        ctx.stroke();
+    }
 
-        // use in future instead of hardcoding levelData
-        function loadMap() {
-            console.log("load map")
-        }
+    function updateCurrentPathColors() {
+        if (path.length === 0) return;
 
-        setInfo();
+        const votes = path.map(t => t.textContent);
+        const rCount = votes.filter(v => v === "R").length;
+        const bCount = votes.filter(v => v === "B").length;
 
-        function getTileCenter(tile) {
-            const rect = tile.getBoundingClientRect();
-            const parentRect = board.getBoundingClientRect();
-            return {
-                x: rect.left - parentRect.left + rect.width / 2,
-                y: rect.top - parentRect.top + rect.height / 2
-            };
-        }
-
-        function drawLines() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (path.length < 2) return;
-
-            const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
-
-            let strokeColor = "#e8e8e8"; // default gray
-
-            if (currentWord.length >= currentVoteCount) {
-                strokeColor = finalizePathColor();  // apply final result
-            } else {
-                clearPathColoring();  // remove any result-based styles
-            }
-
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = 16;
-            ctx.beginPath();
-            const start = getTileCenter(path[0]);
-            ctx.moveTo(start.x, start.y);
-            for (let i = 1; i < path.length; i++) {
-                const point = getTileCenter(path[i]);
-                ctx.lineTo(point.x, point.y);
-            }
-            ctx.stroke();
-        }
-
-
-        function areAdjacent(tile1, tile2) {
-            const r1 = +tile1.dataset.row;
-            const c1 = +tile1.dataset.col;
-            const r2 = +tile2.dataset.row;
-            const c2 = +tile2.dataset.col;
-            return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
-        }
-
-        function clearPath() {
-            path.forEach(t => {
-                t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
-            });
-            path = [];
-            drawLines();
-        }
-
-        function clearPathColoring() {
-            path.forEach(t => {
-                t.classList.remove("selected-red", "selected-blue", "selected-purple");
-            });
-        }
-
-        // Generate board from levelData
-        let index = 0;
-        for (let row = 0; row < boardRows; row++) {
-            for (let col = 0; col < boardCols; col++) {
-                const tile = document.createElement("div");
-                tile.classList.add("tile");
-
-                const letter = levelData[index] || "";
-                tile.textContent = letter;
-                //tile.textContent = levelData[index] || ""; // || what the space is when left blank
-                if (letter === "B") tile.style.color = "#5988d1";
-                if (letter === "R") tile.style.color = "#e05353";
-
-                tile.dataset.row = row;
-                tile.dataset.col = col;
-                board.appendChild(tile);
-                index++;
-            }
-        }
-
-        board.addEventListener("mousedown", (e) => {
-            if (!e.target.classList.contains("tile")) return;
-            clearPath();
-            isMouseDown = true;
-            e.target.classList.add("selected", "pop");
-            e.target.classList.add("selected");
-            path.push(e.target);
-            drawLines();
-
-            e.target.addEventListener("animationend", () => {
-                e.target.classList.remove("pop");
-            }, { once: true });
+        // Remove all color classes first
+        path.forEach(t => {
+            t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
         });
 
-        board.addEventListener("mouseover", (e) => {
-            if (!isMouseDown || !e.target.classList.contains("tile")) return;
-
-            const currentTile = e.target;
-            const last = path[path.length - 1];
-            const secondLast = path[path.length - 2];
-
-            // Allow retreating
-            if (secondLast === currentTile) {
-                const removed = path.pop();
-                removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
-                drawLines();
-                return;
-            }
-
-            // Count non-space tiles only
-            const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
-            const atLimit = currentWord.length >= currentVoteCount;
-
-            // if current connection at limit don't allow add more but still allow retreating
-            if (atLimit) return;
-
-            // Allow forawrd if adjacent and not already in path
-            if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
-                currentTile.classList.add("selected", "pop");
-                path.push(currentTile);
-                drawLines();
-
-                currentTile.addEventListener("animationend", () => {
-                    currentTile.classList.remove("pop");
-                }, { once: true });
-            }
-        });
-
-        window.addEventListener("mouseup", () => {
-            if (path.length > 0) {
-                const word = path.map(t => t.textContent).join("");
-                console.log("Selected word:", word);
-                console.log(word.replace(/ /g,'').length);
-            }
-            isMouseDown = false;
-        });
-
-        window.addEventListener("mouseleave", () => {
-            isMouseDown = false;
-        });
-
-        function finalizePathColor() {
-            const votes = path.map(t => t.textContent);
-            const rCount = votes.filter(v => v === "R").length;
-            const bCount = votes.filter(v => v === "B").length;
-
-            let color = "#e8e8e8"; // default gray
-
-            // Remove prior result-based selection classes
-            path.forEach(t => {
-                t.classList.remove("selected-red", "selected-blue", "selected-purple");
-            });
-
+        if (path.length >= currentVoteCount) {
+            // Apply matching color class
             if (rCount > bCount) {
-                color = "#eeb5ae";
                 path.forEach(t => t.classList.add("selected-red"));
             } else if (bCount > rCount) {
-                color = "#aed1ee";
                 path.forEach(t => t.classList.add("selected-blue"));
             } else {
-                color = "#ddc6ea";
                 path.forEach(t => t.classList.add("selected-purple"));
             }
+        } else {
+            // Not full length apply default selected bg
+            path.forEach(t => t.classList.add("selected"));
+        }
+    }
 
-            return color;
+    // draws all finalized districts lines plus current drawing path line
+    function drawLines() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw finalized districts lines first
+        finalizedDistricts.forEach(district => {
+            const color = getStrokeColorForClass(district.colorClass);
+            drawPathLines(district.tiles, color);
+        });
+
+        // Draw current path line if any
+        if (path.length < 2) return;
+
+        const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
+
+        if (currentWord.length >= currentVoteCount) {
+            // When full length color line according to votes
+            const strokeColor = finalizePathColor();
+            drawPathLines(path, strokeColor);
+        } else {
+            // otherwise default gray line
+            drawPathLines(path, "#e8e8e8");
+        }
+    }
+
+    // get stroke color string for given tile class
+    function getStrokeColorForClass(colorClass) {
+        switch (colorClass) {
+            case "selected-red": return "#eeb5ae";
+            case "selected-blue": return "#aed1ee";
+            case "selected-purple": return "#ddc6ea";
+            default: return "#e8e8e8";
+        }
+    }
+
+    function areAdjacent(tile1, tile2) {
+        const r1 = +tile1.dataset.row;
+        const c1 = +tile1.dataset.col;
+        const r2 = +tile2.dataset.row;
+        const c2 = +tile2.dataset.col;
+        return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
+    }
+
+    function clearPath() {
+        path.forEach(t => {
+            if (!isTileFinalized(t)) {
+                t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+            }
+        });
+        path = [];
+        drawLines();
+    }
+
+    function isTileFinalized(tile) {
+        return finalizedDistricts.some(district => district.tiles.includes(tile));
+    }
+
+    function removeDistrictContainingTile(tile) {
+        for (let i = 0; i < finalizedDistricts.length; i++) {
+            const district = finalizedDistricts[i];
+            if (district.tiles.includes(tile)) {
+                // Log what colord district is removed
+                let colorName = "purple";
+                if (district.colorClass === "selected-red") colorName = "red";
+                else if (district.colorClass === "selected-blue") colorName = "blue";
+                console.log(`${colorName} district removed`);
+
+                district.tiles.forEach(t => {
+                    t.classList.remove("selected-red", "selected-blue", "selected-purple");
+                });
+                finalizedDistricts.splice(i, 1);
+
+                // Log updated totals
+                let redCount = 0, blueCount = 0, purpleCount = 0;
+                finalizedDistricts.forEach(d => {
+                    if (d.colorClass === "selected-red") redCount++;
+                    else if (d.colorClass === "selected-blue") blueCount++;
+                    else if (d.colorClass === "selected-purple") purpleCount++;
+                });
+                console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
+
+                break;
+            }
+        }
+    }
+
+
+    let index = 0;
+    for (let row = 0; row < boardRows; row++) {
+        for (let col = 0; col < boardCols; col++) {
+            const tile = document.createElement("div");
+            tile.classList.add("tile");
+
+            const letter = levelData[index] || "";
+            tile.textContent = letter;
+            if (letter === "B") tile.style.color = "#5988d1";
+            if (letter === "R") tile.style.color = "#e05353";
+
+            tile.dataset.row = row;
+            tile.dataset.col = col;
+
+            tile.addEventListener("click", () => {
+                if (isTileFinalized(tile)) {
+                    removeDistrictContainingTile(tile);
+                    drawLines();
+                }
+            });
+
+            board.appendChild(tile);
+            index++;
+        }
+    }
+
+    board.addEventListener("mousedown", (e) => {
+        if (!e.target.classList.contains("tile")) return;
+        if (isTileFinalized(e.target)) return;
+
+        clearPath();
+        isMouseDown = true;
+
+        path.push(e.target);
+        updateCurrentPathColors();
+        drawLines();
+
+        e.target.classList.add("pop");
+        e.target.addEventListener("animationend", () => {
+            e.target.classList.remove("pop");
+        }, { once: true });
+    });
+
+    board.addEventListener("mouseover", (e) => {
+        if (!isMouseDown || !e.target.classList.contains("tile")) return;
+        if (isTileFinalized(e.target)) return;
+
+        const currentTile = e.target;
+        const last = path[path.length - 1];
+        const secondLast = path[path.length - 2];
+
+        // Allow retreating
+        if (secondLast === currentTile) {
+            const removed = path.pop();
+            removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+            updateCurrentPathColors();
+            drawLines();
+            return;
         }
 
-        window.addEventListener("resize", drawLines);
-    </script>
+        const currentWord = path.map(t => t.textContent).join("").replace(/ /g, "");
+        const atLimit = currentWord.length >= currentVoteCount;
+
+        if (atLimit) return;
+
+        if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
+            path.push(currentTile);
+            updateCurrentPathColors();
+            drawLines();
+
+            currentTile.classList.add("pop");
+            currentTile.addEventListener("animationend", () => {
+                currentTile.classList.remove("pop");
+            }, { once: true });
+        }
+    });
+
+    window.addEventListener("mouseup", () => {
+        if (path.length > 0) {
+            const word = path.map(t => t.textContent).join("");
+            // console.log("Selected word:", word);
+
+            if (word.replace(/ /g,'').length === currentVoteCount) {
+                // Finalize district
+                const colorClass = getFinalColorClass();
+
+                finalizedDistricts.push({
+                    tiles: [...path],
+                    colorClass
+                });
+
+                // remove temp selected class and apply final color class only
+                path.forEach(t => {
+                    t.classList.remove("selected");
+                    t.classList.add(colorClass);
+                });
+
+                // log district color drawn
+                let colorName = "purple";
+                if (colorClass === "selected-red") colorName = "red";
+                else if (colorClass === "selected-blue") colorName = "blue";
+                console.log(`${colorName} district drawn`);
+
+                // Count totals
+                let redCount = 0, blueCount = 0, purpleCount = 0;
+                finalizedDistricts.forEach(district => {
+                    if (district.colorClass === "selected-red") redCount++;
+                    else if (district.colorClass === "selected-blue") blueCount++;
+                    else if (district.colorClass === "selected-purple") purpleCount++;
+                });
+                console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
+
+                if (finalizedDistricts.length === currentDistrictCount) {
+                    console.log("all districts drawn");
+                    if (redCount > blueCount) {
+                        console.log("LEVEL WIN!");
+
+                        setTimeout(function() {
+                            document.querySelectorAll('.tile').forEach(tile => {
+                                tile.classList.add('fade-text');
+                            });
+                        }, 500);
+                    }
+                    else {
+                        console.log("NOT QUITE! LEVEL LOSE!");
+                    }
+                }
+
+                path = [];
+                drawLines();
+            } else {
+                clearPath();
+            }
+        }
+        isMouseDown = false;
+    });
+
+
+    window.addEventListener("mouseleave", () => {
+        isMouseDown = false;
+    });
+
+    function getFinalColorClass() {
+        const votes = path.map(t => t.textContent);
+        const rCount = votes.filter(v => v === "R").length;
+        const bCount = votes.filter(v => v === "B").length;
+
+        if (rCount > bCount) return "selected-red";
+        else if (bCount > rCount) return "selected-blue";
+        else return "selected-purple";
+    }
+
+    function finalizePathColor() {
+        const votes = path.map(t => t.textContent);
+        const rCount = votes.filter(v => v === "R").length;
+        const bCount = votes.filter(v => v === "B").length;
+
+        if (rCount > bCount) return "#eeb5ae";
+        else if (bCount > rCount) return "#aed1ee";
+        else return "#ddc6ea";
+    }
+
+    window.addEventListener("resize", () => {
+        drawLines();
+    });
+</script>
 </body>
 </html>
