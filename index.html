@@ -70,6 +70,18 @@
             z-index: 1;
             pointer-events: none;
         }
+
+        @keyframes pop {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.1); }  /* how big to make circle select anim */
+            60%  { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        .tile.pop {
+            animation: pop 250ms ease-out;  /* how fast to make circle select anim */
+        }
+
     </style>
 </head>
 <body>
@@ -178,9 +190,14 @@
             if (!e.target.classList.contains("tile")) return;
             clearPath();
             isMouseDown = true;
+            e.target.classList.add("selected", "pop");
             e.target.classList.add("selected");
             path.push(e.target);
             drawLines();
+
+            e.target.addEventListener("animationend", () => {
+                e.target.classList.remove("pop");
+            }, { once: true });
         });
 
         board.addEventListener("mouseover", (e) => {
@@ -207,9 +224,13 @@
 
             // Allow forawrd if adjacent and not already in path
             if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
-                currentTile.classList.add("selected");
+                currentTile.classList.add("selected", "pop");
                 path.push(currentTile);
                 drawLines();
+
+                currentTile.addEventListener("animationend", () => {
+                    currentTile.classList.remove("pop");
+                }, { once: true });
             }
         });
 
