@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Gerrymandle</title>
+    <style>
+        root {
+            --gray-select: #e8e8e8;
+            --red-select: #eeb5ae;
+            --blue-select: #aed1ee;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            height: 100vh;
+        }
+
+        #board-container {
+            position: relative;
+            width: 460px;
+            height: 620px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(6, 60px);
+            grid-template-rows: repeat(8, 60px);
+            gap: 20px;
+            position: absolute;
+            z-index: 2;
+        }
+
+        .tile {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+        .tile .red {
+            color: red;
+        }
+        .tile .blue {
+            color: blue;
+        }
+
+        .tile.selected {
+            background: #e8e8e8;
+            /*border-color: var(--gray-select);*/
+        }
+
+        #line-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h2>Gerrymandle</h2>
+
+    <div id="board-container">
+        <canvas id="line-canvas" width="460" height="620"></canvas>
+        <div id="board"></div>
+    </div>
+
+<script>
+    const boardCols = 6;
+    const boardRows = 8;
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const board = document.getElementById("board");
+    const canvas = document.getElementById("line-canvas");
+    const ctx = canvas.getContext("2d");
+    let isMouseDown = false;
+    let path = [];
+
+    function getTileCenter(tile) {
+        const rect = tile.getBoundingClientRect();
+        const parentRect = board.getBoundingClientRect();
+        return {
+            x: rect.left - parentRect.left + rect.width / 2,
+            y: rect.top - parentRect.top + rect.height / 2
+        };
+    }
+
+    function drawLines() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (path.length < 2) return;
+        ctx.strokeStyle = "#e8e8e8";
+        ctx.lineWidth = 16;
+        ctx.beginPath();
+        const start = getTileCenter(path[0]);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < path.length; i++) {
+            const point = getTileCenter(path[i]);
+            ctx.lineTo(point.x, point.y);
+        }
+        ctx.stroke();
+    }
+
+    function areAdjacent(tile1, tile2) {
+        const r1 = +tile1.dataset.row;
+        const c1 = +tile1.dataset.col;
+        const r2 = +tile2.dataset.row;
+        const c2 = +tile2.dataset.col;
+        return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
+    }
+
+    function clearPath() {
+        path.forEach(t => t.classList.remove("selected"));
+        path = [];
+        drawLines();
+    }
+
+    // Generate board
+    for (let row = 0; row < boardRows; row++) {
+        for (let col = 0; col < boardCols; col++) {
+            const tile = document.createElement("div");
+            tile.classList.add("tile");
+            tile.textContent = letters[Math.floor(Math.random() * letters.length)];
+            tile.dataset.row = row;
+            tile.dataset.col = col;
+            board.appendChild(tile);
+        }
+    }
+
+    board.addEventListener("mousedown", (e) => {
+        if (!e.target.classList.contains("tile")) return;
+        clearPath();
+        isMouseDown = true;
+        e.target.classList.add("selected");
+        path.push(e.target);
+        drawLines();
+    });
+
+    board.addEventListener("mouseover", (e) => {
+        if (!isMouseDown || !e.target.classList.contains("tile")) return;
+
+        const currentTile = e.target;
+        const last = path[path.length - 1];
+        const secondLast = path[path.length - 2];
+
+        // If backtracking, undo last move
+        if (secondLast === currentTile) {
+            const removed = path.pop();
+            removed.classList.remove("selected");
+            drawLines();
+            return;
+        }
+
+        // Addd new tile if adjacent and not already in path
+        if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
+            currentTile.classList.add("selected");
+            path.push(currentTile);
+            drawLines();
+        }
+    });
+
+
+    window.addEventListener("mouseup", () => {
+        if (path.length > 0) {
+            const word = path.map(t => t.textContent).join("");
+            console.log("Selected word:", word);
+        }
+        isMouseDown = false;
+    });
+
+    window.addEventListener("mouseleave", () => {
+        isMouseDown = false;
+    });
+
+    window.addEventListener("resize", drawLines);
+</script>
+</body>
+</html>
