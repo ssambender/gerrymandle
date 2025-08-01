@@ -96,6 +96,11 @@
             transition: color 1s ease;
             color: transparent !important;
         }
+
+        .district-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -186,7 +191,6 @@
 
     function updateDistrictBar() {
         const bar = document.getElementById("puzzle-districtbar");
-        bar.innerHTML = ""; // Clear previous segments
 
         const total = currentDistrictCount;
         let red = 0, blue = 0, purple = 0;
@@ -197,20 +201,43 @@
             else if (d.colorClass === "selected-purple") purple++;
         });
 
-        const makeSegment = (fraction, color) => {
-            if (fraction <= 0) return;
-            const segment = document.createElement("div");
-            segment.style.width = `${(fraction / total) * 100}%`;
-            segment.style.background = color;
-            segment.style.height = "100%";
-            bar.appendChild(segment);
-        };
+        const remaining = total - red - blue - purple;
 
-        makeSegment(red, "#eeb5ae");
-        makeSegment(blue, "#aed1ee");
-        makeSegment(purple, "#ddc6ea");
-        makeSegment(total - red - blue - purple, "#e8e8e8"); // Remaining/empty
+        const segments = [
+            { key: "red", count: red, color: "#eeb5ae" },
+            { key: "blue", count: blue, color: "#aed1ee" },
+            { key: "purple", count: purple, color: "#ddc6ea" },
+            { key: "gray", count: remaining, color: "#e8e8e8" }
+        ];
+
+        // Create or reuse segment elements
+        segments.forEach((seg, index) => {
+            let segment = bar.children[index];
+            if (!segment) {
+                segment = document.createElement("div");
+                segment.className = "district-segment";
+                segment.style.background = seg.color;
+                segment.style.width = "0"; // Start at 0 width
+                bar.appendChild(segment);
+
+                // Force a reflow
+                void segment.offsetWidth;
+
+                // Now animate to final width
+                requestAnimationFrame(() => {
+                    segment.style.width = `${(seg.count / total) * 100}%`;
+                });
+            } else {
+                segment.style.width = `${(seg.count / total) * 100}%`;
+            }
+        });
+
+        // Remove extra segments
+        while (bar.children.length > segments.length) {
+            bar.removeChild(bar.lastChild);
+        }
     }
+
 
     function getTileCenter(tile) {
         const rect = tile.getBoundingClientRect();
