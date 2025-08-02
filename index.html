@@ -572,8 +572,9 @@
                     console.log("all districts drawn");
                     if (redCount > blueCount) {
                         console.log("LEVEL WIN!");
-                        
+
                         board.style.pointerEvents = "none";  // stop board edits after win
+                        //board.style.pointerEvents = "auto";  // to reenable events on board reset or something
 
                         setTimeout(function() {
                             document.querySelectorAll('.tile').forEach(tile => {
