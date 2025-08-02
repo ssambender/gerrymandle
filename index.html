@@ -105,8 +105,9 @@
 </head>
 <body>
 
-<div style="width: 100%; height: 20vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
-    <img src="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/logo.png" height="70px" style="padding-bottom: 20px;">
+<div style="width: 100%; height: 23vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
+    <!--    <img src="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/logo.png" height="70px" style="padding-bottom: 20px;">-->
+    <h1 style="color: #333333; font-family: sans-serif; font-weight: normal; text-transform: uppercase;">Gerrymandle</h1>
 </div>
 <div style="width: 100%; height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center">
     <h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
@@ -117,7 +118,7 @@
         <div id="board"></div>
     </div>
 </div>
-<div style="width: 100%; height: 20vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
+<div style="width: 100%; height: 17vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
     <a id="madebysam" href="https://sambender.net">
         Made with ❤️ by Sam Bender
     </a>
@@ -177,7 +178,7 @@
     let finalizedDistricts = [];
 
     function setInfo() {
-        document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;
+        document.getElementById('puzzle-info').innerText = `8/2/25 - ${currentDistrictCount} districts of ${currentVoteCount}`;
     }
     function updateVoteTotals() {
         const rTotal = levelData.filter(cell => cell === "R").length;
