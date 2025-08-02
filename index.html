@@ -186,6 +186,8 @@
     function loadLevel(levelName) {
         if (!levels[levelName]) return;
 
+        board.style.pointerEvents = "auto";
+
         const data = levels[levelName];
 
         currentDistrictCount = parseInt(data[0]);
