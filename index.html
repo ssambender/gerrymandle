@@ -43,7 +43,7 @@
             font-size: 22px;
             font-weight: bold;
             color: #333;
-            cursor: pointer;
+            /*cursor: pointer;*/
             user-select: none;
         }
 
@@ -125,16 +125,11 @@
 </div>
 
 <script>
-    //todo - add 3 divs from top to bottom (20%, 80%, 20%) for heading, main, and footer
-    //todo - heading will have title, footer will have instructions and site link
-
-    //todo - add a live count that shows num of each color district, and show total starting votes per color
-
     const boardCols = 6;
     const boardRows = 8;
 
     let currentDistrictCount = 5;
-    let currentVoteCount = 6;
+    let currentVoteCount = 4;
 
     const levelData1 = [
         "R", "R", "R", "R", "R", "R", //6x8 works, 3x16 works
@@ -147,7 +142,7 @@
         "B", "B", "B", "B", "B", "R"
     ];
 
-    const levelData = [
+    const levelData3 = [
         " ", "R", " ", "B", "B", " ", //5x6
         "R", "B", "B", "R", "B", "R",
         "B", "R", "B", "B", "R", " ",
@@ -169,6 +164,17 @@
         " ", " ", " ", " ", " ", " "
     ];
 
+    const levelData = [
+        " ", " ", " ", " ", " ", " ", //5x4 works
+        " ", "B", " ", "B", "R", " ",
+        "B", " ", "O", "O", "R", "R",
+        " ", "O", "B", "B", " ", "O",
+        " ", "B", "R", "B", "B", "O",
+        "R", "O", "R", "R", "B", "R",
+        " ", " ", "B", "R", "B", " ",
+        " ", " ", " ", " ", " ", " "
+    ];
+
     const board = document.getElementById("board");
     const canvas = document.getElementById("line-canvas");
     const ctx = canvas.getContext("2d");
@@ -178,7 +184,13 @@
     let finalizedDistricts = [];
 
     function setInfo() {
-        document.getElementById('puzzle-info').innerText = `8/2/25 - ${currentDistrictCount} districts of ${currentVoteCount}`;
+        const today = new Date();
+        const mm = today.getMonth() + 1;
+        const dd = today.getDate();
+        const yy = String(today.getFullYear()).slice(-2);
+        const formattedDate = `${mm}/${dd}/${yy}`;
+
+        document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
     }
     function updateVoteTotals() {
         const rTotal = levelData.filter(cell => cell === "R").length;
@@ -428,9 +440,18 @@
 
             const letter = levelData[index] || "";
             tile.textContent = letter;
-            if (letter === "B") tile.style.color = "#5988d1";
-            if (letter === "R") tile.style.color = "#e05353";
-            if (letter === "O") tile.style.color = "#dadada";
+            if (letter === "B") {
+                tile.style.color = "#5988d1";
+                tile.style.cursor = "pointer";
+            }
+            if (letter === "R") {
+                tile.style.color = "#e05353";
+                tile.style.cursor = "pointer";
+            }
+            if (letter === "O") {
+                tile.style.color = "#dadada";
+                tile.style.cursor = "pointer";
+            }
 
             tile.dataset.row = row;
             tile.dataset.col = col;
@@ -551,6 +572,8 @@
                     console.log("all districts drawn");
                     if (redCount > blueCount) {
                         console.log("LEVEL WIN!");
+                        
+                        board.style.pointerEvents = "none";  // stop board edits after win
 
                         setTimeout(function() {
                             document.querySelectorAll('.tile').forEach(tile => {
