@@ -27,6 +27,14 @@
       width: 100%;
       text-align: center;
     }
+    @media all and (orientation: portrait) {
+      #heading {
+        font-size: 1.5em;
+      }
+      #puzzle-info {
+        font-size: 1.25em;
+      }
+    }
 
     #board-container {
       position: relative;
@@ -52,11 +60,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 28px;
       font-weight: bold;
       color: #333;
       /*cursor: pointer;*/
       user-select: none;
+      line-height: 1;
+      vertical-align: middle;
     }
 
     /* Highlight classes */
@@ -127,7 +137,7 @@
 </head>
 <body>
 
-<h1 id="heading">Gerrymandle</h1>
+<h1 id="heading"><span style="color: #e05353">★★★</span> Gerrymandle <span style="color: #5988d1">★★★</span></h1>
 
 <h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
 <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: #333333;"><b style="color: #5988d1">17</b> - <b style="color: #e05353">13</b>. Help red win!</h3>
@@ -148,7 +158,7 @@
   const boardRows = 8;
 
   const levels = {
-    LVL00: ["14", "3",
+    LVL00: ["16", "3",
       "B", "B", "B", "B", "B", "B",
       "R", "R", "B", "R", "R", "B",
       "R", "R", "B", "R", "R", "B",
@@ -277,6 +287,25 @@
   let levelData = [];
   let finalizedDistricts = [];
 
+  // CHARACTER SYMBOLS TO DISPLAY
+  /*
+  ★✩✰
+  ✪
+  ✦✧
+  ✯
+  R 🟥
+  B 🟦
+  W ⬜
+  */
+  function getDisplayCharacter(char) {
+    switch (char) {
+      case "R": return "★";
+      case "B": return "✪";
+      case "O": return "✩";
+      default: return " ";
+    }
+  }
+
   function loadLevel(levelName) {
     if (!levels[levelName]) return;
 
@@ -297,14 +326,16 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Rebuild board
-    let index = 2;
+    let index = 2; // skip the first two (district x vote var counts)
     for (let row = 0; row < boardRows; row++) {
       for (let col = 0; col < boardCols; col++) {
         const tile = document.createElement("div");
         tile.classList.add("tile");
 
         const letter = data[index] || "";
-        tile.textContent = letter;
+        //tile.dataset.value = letter;
+        tile.dataset.value = letter; // store actual value for logic
+        tile.innerText = getDisplayCharacter(letter); // show visual representation
         if (letter === "B") {
           tile.style.color = "#5988d1";
           tile.style.cursor = "pointer";
@@ -444,7 +475,7 @@
   function updateCurrentPathColors() {
     if (path.length === 0) return;
 
-    const votes = path.map(t => t.textContent);
+    const votes = path.map(t => t.dataset.value);
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
 
@@ -454,7 +485,7 @@
     });
 
     const voteCount = path.filter(t => {
-      const val = t.textContent.trim();
+      const val = t.dataset.value.trim();
       return val === "R" || val === "B";
     }).length;
 
@@ -487,7 +518,7 @@
     if (path.length < 2) return;
 
     const voteCount = path.filter(t => {
-      const val = t.textContent.trim();
+      const val = t.dataset.value.trim();
       return val === "R" || val === "B";
     }).length;
 
@@ -595,46 +626,47 @@
     }
   }
 
-  let index = 2; // skip the first two (district x vote var counts)
-  for (let row = 0; row < boardRows; row++) {
-    for (let col = 0; col < boardCols; col++) {
-      const tile = document.createElement("div");
-      tile.classList.add("tile");
-
-      const letter = levelData[index] || "";
-      tile.textContent = letter;
-      if (letter === "B") {
-        tile.style.color = "#5988d1";
-        tile.style.cursor = "pointer";
-      }
-      if (letter === "R") {
-        tile.style.color = "#e05353";
-        tile.style.cursor = "pointer";
-      }
-      if (letter === "O") {
-        tile.style.color = "#dadada";
-        tile.style.cursor = "pointer";
-      }
-
-      tile.dataset.row = row;
-      tile.dataset.col = col;
-
-      tile.addEventListener("click", () => {
-        if (isTileFinalized(tile)) {
-          removeDistrictContainingTile(tile);
-          drawLines();
-        }
-      });
-
-      board.appendChild(tile);
-      index++;
-    }
-  }
+  // redundant
+  // let index = 2; // skip the first two (district x vote var counts)
+  // for (let row = 0; row < boardRows; row++) {
+  //   for (let col = 0; col < boardCols; col++) {
+  //     const tile = document.createElement("div");
+  //     tile.classList.add("tile");
+  //
+  //     const letter = levelData[index] || "";
+  //     tile.dataset.value = letter;
+  //     if (letter === "B") {
+  //       tile.style.color = "#5988d1";
+  //       tile.style.cursor = "pointer";
+  //     }
+  //     if (letter === "R") {
+  //       tile.style.color = "#e05353";
+  //       tile.style.cursor = "pointer";
+  //     }
+  //     if (letter === "O") {
+  //       tile.style.color = "#dadada";
+  //       tile.style.cursor = "pointer";
+  //     }
+  //
+  //     tile.dataset.row = row;
+  //     tile.dataset.col = col;
+  //
+  //     tile.addEventListener("click", () => {
+  //       if (isTileFinalized(tile)) {
+  //         removeDistrictContainingTile(tile);
+  //         drawLines();
+  //       }
+  //     });
+  //
+  //     board.appendChild(tile);
+  //     index++;
+  //   }
+  // }
 
   board.addEventListener("mousedown", (e) => {
     if (!e.target.classList.contains("tile")) return;
     if (isTileFinalized(e.target)) return;
-    if (e.target.textContent.trim() === "") return;  //prevents selecting blank spaces
+    if (e.target.dataset.value.trim() === "") return;  //prevents selecting blank spaces
 
     clearPath();
     isMouseDown = true;
@@ -654,7 +686,7 @@
     if (isTileFinalized(e.target)) return;
 
     const currentTile = e.target;
-    if (currentTile.textContent.trim() === "") return;  //prevents selecting blank spaces
+    if (currentTile.dataset.value.trim() === "") return;  //prevents selecting blank spaces
 
     const last = path[path.length - 1];
     const secondLast = path[path.length - 2];
@@ -669,7 +701,7 @@
     }
 
     const voteCount = path.filter(t => {
-      const val = t.textContent.trim();
+      const val = t.dataset.value.trim();
       return val === "R" || val === "B";
     }).length;
 
@@ -691,11 +723,11 @@
 
   window.addEventListener("mouseup", () => {
     if (path.length > 0) {
-      const word = path.map(t => t.textContent).join("");
+      const word = path.map(t => t.dataset.value).join("");
       // console.log("Selected word:", word);
 
       const voteCount = path.filter(t => {
-        const val = t.textContent.trim();
+        const val = t.dataset.value.trim();
         return val === "R" || val === "B";
       }).length;
 
@@ -770,7 +802,7 @@
 
   function getFinalColorClass() {
     const votes = path
-            .map(t => t.textContent)
+            .map(t => t.dataset.value)
             .filter(v => v !== "O");
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
@@ -782,7 +814,7 @@
 
   function finalizePathColor() {
     const votes = path
-            .map(t => t.textContent)
+            .map(t => t.dataset.value)
             .filter(v => v !== "O");
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
