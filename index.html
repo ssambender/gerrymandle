@@ -8,6 +8,7 @@
   <style>
     :root {
       --bg: #ffffff;
+      --bg-opacity: rgba(255, 255, 255, 0.75);
       --text: #55698c;
 
       --gray-highlight: #E8E8E8;
@@ -22,6 +23,7 @@
     /* Override light theme manually */
     html[data-theme="light"] {
       --bg: #ffffff;
+      --bg-opacity: rgba(255, 255, 255, 0.75);
       --text: #55698c;
       --gray-highlight: #E8E8E8;
       --red-highlight: #eeb5ae;
@@ -35,6 +37,7 @@
     /* Override dark theme manually */
     html[data-theme="dark"] {
       --bg: #242f3b;
+      --bg-opacity: rgba(36, 47, 59, 0.75);
       --text: #ffffff;
       --gray-highlight: #424f5e;
       --red-highlight: #803026;
@@ -49,6 +52,7 @@
     @media (prefers-color-scheme: dark) {
       html:not([data-theme]) {
         --bg: #242f3b;
+        --bg-opacity: rgba(36, 47, 59, 0.75);
         --text: #ffffff;
         --gray-highlight: #424f5e;
         --red-highlight: #803026;
@@ -76,6 +80,11 @@
       }
     }
 
+    button {
+      font-family: 'Clear Sans', 'Helvetica Neue', 'Franklin Gothic Demi Cond', 'Bahnschrift', Arial, sans-serif;
+      padding-top: 4px;
+    }
+
     #heading {
       color: var(--text);
       font-weight: normal;
@@ -85,12 +94,22 @@
       width: 100%;
       text-align: center;
 
+      z-index: 20;
+
       margin-top: 0;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       line-height: 1;
       padding: 14px 0 8px;
+    }
+
+    #help-button {
+      margin-right: 48px;
+      cursor: pointer;
+      user-select: none;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     #theme-select {
@@ -105,7 +124,7 @@
       position: absolute;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(255, 255, 255, 0.75);
+      background-color: var(--bg-opacity);
       z-index: 10;
       display: flex;
       justify-content: center;
@@ -114,15 +133,19 @@
       text-align: center;
       transition: opacity 1s;
     }
+    #start-modal-container.popup-modal-container {
+      background-color: var(--bg);
+    }
     .popup-modal {
-      background-color: white;
+      background-color: var(--bg);
       padding: 48px;
-      border-radius: 36px;
+      /*border-radius: 36px;*/
       border: solid 2px var(--gray-highlight);
       color: var(--text);
       cursor: default;
       position: relative;
     }
+
     #share-line {
       text-decoration: underline;
       color: var(--blue-highlight);
@@ -132,7 +155,7 @@
       cursor: pointer;
       color: var(--blue-letter);
     }
-    #finish-close {
+    .modal-close {
       position: absolute;
       top: 12px;
       right: 24px;
@@ -143,8 +166,30 @@
       color: var(--red-highlight);
       transition: color .15s;
     }
-    #finish-close:hover {
+    .modal-close:hover {
       color: var(--red-letter);
+    }
+
+    #start-modal {
+      max-width: 30vw;
+      padding: 48px 48px 24px 48px;
+    }
+
+    #start-game-button {
+      background: none;
+      outline: none;
+      color: var(--gray-highlight);
+      border: solid 2px var(--gray-highlight);
+      transition: color .15s, border .15s;
+      cursor: pointer;
+      font-size: 1.5em;
+      padding: 12px 24px 8px;
+      border-radius: 8px;
+      margin-top: 24px;
+    }
+    #start-game-button:hover {
+      color: var(--gray-letter);
+      border: solid 2px var(--gray-letter);
     }
 
     @media all and (orientation: portrait) {
@@ -153,6 +198,12 @@
       }
       #puzzle-info {
         font-size: 1.25em;
+      }
+      #start-modal {
+        max-width: 50%;
+      }
+      #start-modal-container {
+        z-index: 24;
       }
     }
 
@@ -276,6 +327,9 @@
     }
 
     @media (max-width: 619px) {
+      body {
+        overflow-y: hidden;
+      }
       #board-container {
         width: 360px;
         height: 484px;
@@ -298,6 +352,14 @@
         width: 360px !important;
         height: 484px !important;
       }
+
+      #start-modal-container {
+        height: 100%;
+      }
+      #start-modal {
+        max-width: 90%;
+        padding: 8px;
+      }
     }
 
     @media (max-width: 460px) {
@@ -310,16 +372,55 @@
 </head>
 <body>
 
-<div id="finish-modal-container" class="popup-modal-container" style="display: none;">
+<div id="start-modal-container" class="popup-modal-container" style="display: flex;">
+  <div id="start-modal" class="popup-modal" style="text-align: left;">
+    <div id="start-close" class="modal-close" style="display: none;">+</div>
+    <div style="font-weight: bold; font-size: 1.5em;">How to Play :</div>
+    <div style="font-weight: 100;">
+      • Draw districts by dragging/connecting adjacent star tiles<br>
+      • Each district must include exactly <b id="number-voters-today">#</b> stars<br>
+      • Majority of star colors in a district win that color the district<br>
+      • You win by totalling more Red districts than Blue<br>
+      • Click on a district to remove it and try again<br>
+    </div>
+    <br>
+    <div style="font-weight: bold; font-size: 1.5em;">What is Gerrymandering?</div>
+    <div style="font-weight: 100;">Gerrymandering is when politicians redraw voting district boundaries to unfairly boost their own party’s power,
+      often silencing the voices of larger communities. It flips democracy on its head—letting leaders choose their voters
+      instead of voters choosing their leaders. In the end, the will of the majority is replaced by the agenda of the minority.
+    </div>
+    <br>
+    <div id="theme-toggle" style="z-index: 25;">
+      <label for="theme-select" style="color: var(--text);">Theme:</label>
+      <select id="theme-select">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+    <br>
+    <i style="font-weight: 100;">( You can reopen this screen at any time with the <span style="font-weight: 900">?</span> at the top right )</i>
+
+    <div style="display: flex; justify-content: center;">
+      <button id="start-game-button">BEGIN</button>
+    </div>
+  </div>
+</div>
+
+<div id="finish-modal-container" class="popup-modal-container" style="display: none; z-index: 21">
   <div id="finish-modal" class="popup-modal">
-    <div id="finish-close">+</div>
+    <div id="finish-close" class="modal-close">+</div>
     <div id="win-message" style="font-weight: bold; font-size: 1.5em; text-transform: uppercase;">Well Done!</div>
     <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED MAP #<span id="map-number-label">0</span> IN <span id="time-spent-label">02:12s</span></div>
     <div id="share-line">Share your time with friends.</div>
   </div>
 </div>
 
-<h1 id="heading"><span style="color: var(--red-letter)">★★★</span> Gerrymandle <span style="color: var(--blue-letter)">★★★</span></h1>
+<h1 id="heading">
+  <div style="visibility: hidden"></div>
+  <div><span style="color: var(--red-letter)">★★★</span> Gerrymandle <span style="color: var(--blue-letter)">★★★</span></div>
+  <div id="help-button">?</div>
+</h1>
 
 <h2 id="puzzle-info" style="margin-bottom: 0; color: var(--text);">? districts of ?</h2>
 <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text);"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
@@ -330,15 +431,6 @@
 </div>
 
 <div id="level-buttons"></div>
-
-<div id="theme-toggle" style="position: absolute; top: 12px; right: 24px;">
-  <label for="theme-select" style="color: var(--text);">Theme:</label>
-  <select id="theme-select">
-    <option value="system">System</option>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-  </select>
-</div>
 
 <a id="madebysam" href="https://sambender.net">
   Made with ❤️ by Sam Bender
@@ -597,6 +689,7 @@
 
     //document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
     document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
+    document.getElementById('number-voters-today').innerText = currentVoteCount;
   }
   function updateVoteTotals() {
     const rTotal = levelData.filter(cell => cell === "R").length;
@@ -1090,6 +1183,33 @@
   document.getElementById('finish-close').addEventListener("click", () => {
     document.getElementById('finish-modal-container').style.display = 'none';
     document.getElementById('finish-modal-container').style.opacity = '0';
+  });
+
+  // close start modal
+  document.getElementById('start-game-button').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'none';
+    document.getElementById('start-modal-container').style.opacity = '0';
+
+    //todo - START TIMER HERE
+    document.body.style.overflowY = 'visible';
+    document.getElementById('start-game-button').style.display = 'none';
+    document.getElementById('start-modal').style.padding = '48px';
+    document.getElementById('start-close').style.display = 'flex';
+
+    document.getElementById('help-button').style.visibility = 'visible';
+    document.getElementById('help-button').style.pointerEvents = 'all';
+  })
+
+  document.getElementById('start-close').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'none';
+    document.getElementById('start-modal-container').style.opacity = '0';
+  });
+
+  // open help modal
+  document.getElementById('help-button').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'flex';
+    document.getElementById('start-modal-container').style.opacity = '1';
+    document.getElementById('start-modal-container').style.background = 'var(--bg-opacity)';
   });
 
   // start with test level loaded by default
