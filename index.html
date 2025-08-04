@@ -4,29 +4,133 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gerrymandle</title>
-  <link rel="icon" href="https://em-content.zobj.net/source/joypixels/275/flag-united-states_1f1fa-1f1f8.png">
+  <link rel="icon" href="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/g-logo.png">
   <style>
+    :root {
+      --bg: #ffffff;
+      --text: #55698c;
+
+      --gray-highlight: #E8E8E8;
+      --red-highlight: #eeb5ae;
+      --blue-highlight: #aed1ee;
+      --purple-highlight: #ddc6ea;
+
+      --gray-letter: #dadada;
+      --red-letter: #e05353;
+      --blue-letter: #5988d1;
+    }
+    /* Override light theme manually */
+    html[data-theme="light"] {
+      --bg: #ffffff;
+      --text: #55698c;
+      --gray-highlight: #E8E8E8;
+      --red-highlight: #eeb5ae;
+      --blue-highlight: #aed1ee;
+      --purple-highlight: #ddc6ea;
+      --gray-letter: #dadada;
+      --red-letter: #e05353;
+      --blue-letter: #5988d1;
+    }
+
+    /* Override dark theme manually */
+    html[data-theme="dark"] {
+      --bg: #242f3b;
+      --text: #ffffff;
+      --gray-highlight: #424f5e;
+      --red-highlight: #803026;
+      --blue-highlight: #164c7d;
+      --purple-highlight: #5f436f;
+      --gray-letter: #6e7a86;
+      --red-letter: #e05353;
+      --blue-letter: #5988d1;
+    }
+
+    /* Fallback for system preference (only used if no manual override) */
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme]) {
+        --bg: #242f3b;
+        --text: #ffffff;
+        --gray-highlight: #424f5e;
+        --red-highlight: #803026;
+        --blue-highlight: #164c7d;
+        --purple-highlight: #5f436f;
+        --gray-letter: #6e7a86;
+        --red-letter: #e05353;
+        --blue-letter: #5988d1;
+      }
+    }
+
     body {
-      font-family: sans-serif;
-      background: #ffffff;
+      font-family: 'Clear Sans', 'Helvetica Neue', 'Franklin Gothic Demi Cond', 'Bahnschrift', Arial, sans-serif;
+      background: var(--bg);
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      /*justify-content: center;*/
       align-items: center;
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
+    }
+    @media (min-width: 1060px) {
+      body {
+        max-height: 100vh;
+      }
     }
 
     #heading {
-      color: #333333;
-      font-family: sans-serif;
+      color: var(--text);
       font-weight: normal;
       text-transform: uppercase;
       margin-bottom: 0;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid var(--gray-highlight);
       width: 100%;
       text-align: center;
+
+      margin-top: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      line-height: 1;
+      padding: 14px 0 8px;
     }
+
+    #theme-select {
+      color: var(--text);
+      font-weight: bold;
+      background: var(--bg);
+      outline: none;
+      border: solid 2px var(--gray-highlight);
+    }
+
+    .popup-modal-container {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.75);
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text);
+      text-align: center;
+    }
+    .popup-modal {
+      background-color: white;
+      padding: 48px;
+      border-radius: 36px;
+      border: solid 2px var(--gray-highlight);
+      color: var(--red-letter);
+      cursor: default;
+    }
+    #share-line {
+      text-decoration: underline;
+      color: #eeb5ae;
+      transition: color .15s;
+    }
+    #share-line:hover {
+      cursor: pointer;
+      color: var(--red-letter);
+    }
+
     @media all and (orientation: portrait) {
       #heading {
         font-size: 1.5em;
@@ -56,31 +160,41 @@
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background: #ffffff;
+      background: var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
       font-weight: bold;
-      color: #333;
+      color: var(--text);
       /*cursor: pointer;*/
       user-select: none;
-      line-height: 1;
+      line-height: 1;  /* remove this line if using text not symbols in tiles */
       vertical-align: middle;
     }
 
     /* Highlight classes */
     .tile.selected {
-      background: #e8e8e8;
+      background: var(--gray-highlight);
     }
     .tile.selected-red {
-      background: #eeb5ae;
+      background: var(--red-highlight);
     }
     .tile.selected-blue {
-      background: #aed1ee;
+      background: var(--blue-highlight);
     }
     .tile.selected-purple {
-      background: #ddc6ea;
+      background: var(--purple-highlight);
+    }
+
+    .tile-red {
+      color: var(--red-letter);
+    }
+    .tile-blue {
+      color: var(--blue-letter);
+    }
+    .tile-gray {
+      color: var(--gray-letter);
     }
 
     #line-canvas {
@@ -94,15 +208,26 @@
     #level-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 12px;
       margin-top: 12px;
       padding: 10px;
       justify-content: center;
       align-items: center;
     }
+    #level-buttons button {
+      background: var(--bg);
+      outline: none;
+      border: solid 2px var(--gray-highlight);
+      color: var(--gray-highlight);
+      cursor: pointer;
+    }
+    #level-buttons button:hover {
+      color: var(--text);
+      border: solid 2px var(--text);
+    }
 
     #madebysam {
-      color: #333333;
+      color: var(--text);
       cursor: pointer;
       margin-top: 36px;
       padding-bottom: 12px;
@@ -133,21 +258,70 @@
       height: 100%;
       transition: width 0.3s ease;
     }
+
+    @media (max-width: 619px) {
+      #board-container {
+        width: 360px;
+        height: 484px;
+        min-height: 484px;
+      }
+
+      #board {
+        grid-template-columns: repeat(6, 40px);
+        grid-template-rows: repeat(8, 40px);
+        gap: 14px;
+      }
+
+      .tile {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+
+      #line-canvas {
+        width: 360px !important;
+        height: 484px !important;
+      }
+    }
+
+    @media (max-width: 460px) {
+      #heading {
+        font-size: 1.1em;
+        box-sizing: border-box;
+      }
+    }
   </style>
 </head>
 <body>
 
-<h1 id="heading"><span style="color: #e05353">★★★</span> Gerrymandle <span style="color: #5988d1">★★★</span></h1>
+<div id="finish-modal-container" class="popup-modal-container" style="display: none;">
+  <div id="finish-modal" class="popup-modal">
+    <div id="win-message" style="font-weight: bold; font-size: 2em; text-transform: uppercase;">Well Done!</div>
+    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--blue-highlight);">FINISHED MAP #<span id="map-number-label">324</span> IN <span id="time-spent-label">02:12s</span></div>
+    <div id="share-line">Share your time with friends.</div>
+  </div>
+</div>
 
-<h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
-<h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: #333333;"><b style="color: #5988d1">17</b> - <b style="color: #e05353">13</b>. Help red win!</h3>
-<div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: #e8e8e8; display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
+<h1 id="heading"><span style="color: var(--red-letter)">★★★</span> Gerrymandle <span style="color: var(--blue-letter)">★★★</span></h1>
+
+<h2 id="puzzle-info" style="margin-bottom: 0; color: var(--text);">? districts of ?</h2>
+<h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text);"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
+<div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: var(--gray-highlight); display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
 <div id="board-container">
   <canvas id="line-canvas" width="460" height="620"></canvas>
   <div id="board"></div>
 </div>
 
 <div id="level-buttons"></div>
+
+<div id="theme-toggle" style="position: absolute; top: 12px; right: 24px;">
+  <label for="theme-select" style="color: var(--text);">Theme:</label>
+  <select id="theme-select">
+    <option value="system">System</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+</div>
 
 <a id="madebysam" href="https://sambender.net">
   Made with ❤️ by Sam Bender
@@ -270,6 +444,8 @@
     ]
   };
 
+  const styleVars = getComputedStyle(document.documentElement);
+
   function generateLevelButtons() {
     const container = document.getElementById("level-buttons");
     for (const key in levels) {
@@ -337,17 +513,18 @@
         tile.dataset.value = letter; // store actual value for logic
         tile.innerText = getDisplayCharacter(letter); // show visual representation
         if (letter === "B") {
-          tile.style.color = "#5988d1";
+          //tile.style.color = styleVars.getPropertyValue('--blue-letter').trim();
+          tile.classList.add("tile-blue");
           tile.style.cursor = "pointer";
-          //tile.innerText = "Blue";
         }
         if (letter === "R") {
-          tile.style.color = "#e05353";
+          //tile.style.color = styleVars.getPropertyValue('--red-letter').trim();
+          tile.classList.add("tile-red");
           tile.style.cursor = "pointer";
-          //tile.innerText = "Red";
         }
         if (letter === "O") {
-          tile.style.color = "#dadada";
+          //tile.style.color = styleVars.getPropertyValue('--gray-letter').trim();
+          tile.classList.add("tile-gray");
           tile.style.cursor = "pointer";
         }
 
@@ -369,6 +546,7 @@
     setInfo();
     updateVoteTotals();
     updateDistrictBar();
+    resizeCanvas();
   }
 
   const board = document.getElementById("board");
@@ -376,6 +554,14 @@
   const ctx = canvas.getContext("2d");
   let isMouseDown = false;
   let path = [];
+
+  function resizeCanvas() {
+    const container = document.getElementById("board-container");
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    drawLines(); // redraw after resize
+  }
+  resizeCanvas();
 
   function setInfo() {
     const today = new Date();
@@ -400,6 +586,7 @@
   function updateDistrictBar() {
     const bar = document.getElementById("puzzle-districtbar");
 
+    const styleVars = getComputedStyle(document.documentElement);
     const total = currentDistrictCount;
     let red = 0, blue = 0, purple = 0;
 
@@ -412,35 +599,39 @@
     const remaining = total - red - blue - purple;
 
     const segments = [
-      { key: "red", count: red, color: "#eeb5ae" },
-      { key: "blue", count: blue, color: "#aed1ee" },
-      { key: "purple", count: purple, color: "#ddc6ea" },
-      { key: "gray", count: remaining, color: "#e8e8e8" }
+      { key: "red", count: red, color: styleVars.getPropertyValue('--red-highlight').trim() },
+      { key: "blue", count: blue, color: styleVars.getPropertyValue('--blue-highlight').trim() },
+      { key: "purple", count: purple, color: styleVars.getPropertyValue('--purple-highlight').trim() },
+      { key: "gray", count: remaining, color: styleVars.getPropertyValue('--gray-highlight').trim() }
     ];
 
-    // Create or reuse segment elements
-    segments.forEach((seg, index) => {
-      let segment = bar.children[index];
+    // Update or create segments
+    segments.forEach((seg, i) => {
+      let segment = bar.children[i];
+      const desiredWidth = `${(seg.count / total) * 100}%`;
+
       if (!segment) {
+        // New segment
         segment = document.createElement("div");
         segment.className = "district-segment";
         segment.style.background = seg.color;
-        segment.style.width = "0"; // Start at 0 width
+        segment.style.width = "0";
         bar.appendChild(segment);
-
-        // Force a reflow
-        void segment.offsetWidth;
-
-        // Now animate to final width
         requestAnimationFrame(() => {
-          segment.style.width = `${(seg.count / total) * 100}%`;
+          segment.style.width = desiredWidth;
         });
       } else {
-        segment.style.width = `${(seg.count / total) * 100}%`;
+        // Existing segment: update color & width only if changed
+        if (segment.style.background !== seg.color) {
+          segment.style.background = seg.color;
+        }
+        if (segment.style.width !== desiredWidth) {
+          segment.style.width = desiredWidth;
+        }
       }
     });
 
-    // Remove extra segments
+    // Remove extra segments if any
     while (bar.children.length > segments.length) {
       bar.removeChild(bar.lastChild);
     }
@@ -526,7 +717,8 @@
       const strokeColor = finalizePathColor();
       drawPathLines(path, strokeColor);
     } else {
-      drawPathLines(path, "#e8e8e8");
+      const gray = styleVars.getPropertyValue('--gray-highlight').trim();
+      drawPathLines(path, gray);
     }
 
   }
@@ -534,10 +726,10 @@
   // get stroke color string for given tile class
   function getStrokeColorForClass(colorClass) {
     switch (colorClass) {
-      case "selected-red": return "#eeb5ae";
-      case "selected-blue": return "#aed1ee";
-      case "selected-purple": return "#ddc6ea";
-      default: return "#e8e8e8";
+      case "selected-red": return styleVars.getPropertyValue('--red-highlight').trim();
+      case "selected-blue": return styleVars.getPropertyValue('--blue-highlight').trim();
+      case "selected-purple": return styleVars.getPropertyValue('--purple-highlight').trim();
+      default: return styleVars.getPropertyValue('--gray-highlight').trim();
     }
   }
 
@@ -626,43 +818,26 @@
     }
   }
 
-  // redundant
-  // let index = 2; // skip the first two (district x vote var counts)
-  // for (let row = 0; row < boardRows; row++) {
-  //   for (let col = 0; col < boardCols; col++) {
-  //     const tile = document.createElement("div");
-  //     tile.classList.add("tile");
-  //
-  //     const letter = levelData[index] || "";
-  //     tile.dataset.value = letter;
-  //     if (letter === "B") {
-  //       tile.style.color = "#5988d1";
-  //       tile.style.cursor = "pointer";
-  //     }
-  //     if (letter === "R") {
-  //       tile.style.color = "#e05353";
-  //       tile.style.cursor = "pointer";
-  //     }
-  //     if (letter === "O") {
-  //       tile.style.color = "#dadada";
-  //       tile.style.cursor = "pointer";
-  //     }
-  //
-  //     tile.dataset.row = row;
-  //     tile.dataset.col = col;
-  //
-  //     tile.addEventListener("click", () => {
-  //       if (isTileFinalized(tile)) {
-  //         removeDistrictContainingTile(tile);
-  //         drawLines();
-  //       }
-  //     });
-  //
-  //     board.appendChild(tile);
-  //     index++;
-  //   }
-  // }
+  // SHARE DATA AND SHARE LINK
+  let dayOfMap = 324;
+  let timeSpentSeconds = 121;
+  const shareData = {
+    title: 'Gerrymandle #' + dayOfMap,
+    text: `🔸I beat map #${dayOfMap}` + ` in ${timeSpentSeconds}s. 🗺️ \n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`,
+    //url: 'https://ssambender.github.io/gerrymandle/'
+  }
+  let sharelink = document.getElementById('share-line');
+  sharelink.addEventListener('click', async () => {
+    event.preventDefault();
+    try {
+      await navigator.share(shareData)
+      console.log('shared successfully')
+    } catch (err) {
+      console.log('error' + err)
+    }
+  }, false);
 
+  // EVENT LISTENERS
   board.addEventListener("mousedown", (e) => {
     if (!e.target.classList.contains("tile")) return;
     if (isTileFinalized(e.target)) return;
@@ -819,14 +994,70 @@
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
 
-    if (rCount > bCount) return "#eeb5ae";
-    else if (bCount > rCount) return "#aed1ee";
-    else return "#ddc6ea";
+    if (rCount > bCount) return styleVars.getPropertyValue('--red-highlight').trim();
+    else if (bCount > rCount) return styleVars.getPropertyValue('--blue-highlight').trim();
+    else return styleVars.getPropertyValue('--purple-highlight').trim();
   }
 
   window.addEventListener("resize", () => {
+    resizeCanvas();
     drawLines();
   });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    console.log("Color scheme changed:", e.matches ? "dark" : "light");
+    drawLines(); // Redraw canvas lines with updated CSS variable colors
+    updateDistrictBar();
+  });
+
+
+
+  const themeSelect = document.getElementById("theme-select");
+
+  // Load saved preference
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    themeSelect.value = savedTheme;
+    if (savedTheme === "system") {
+      document.documentElement.removeAttribute("data-theme");
+
+      // Manualy force updates using current system preference
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      console.log("Using system theme:", isDark ? "dark" : "light");
+    } else {
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+
+    // Always refresh visuals on page load based on theme
+    drawLines();
+    updateDistrictBar();
+  }
+
+  // On theme selectchange
+  themeSelect.addEventListener("change", () => {
+    const theme = themeSelect.value;
+    localStorage.setItem("theme", theme);
+    if (theme === "system") {
+      document.documentElement.removeAttribute("data-theme");
+    } else {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+
+    // Refresh visuals
+    drawLines();
+    updateDistrictBar();
+  });
+
+  // force recheck when system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (themeSelect.value === "system") {
+      drawLines();
+      updateDistrictBar();
+    }
+  });
+
+
+
 
   // start with test level loaded by default
   loadLevel('LVL01');
