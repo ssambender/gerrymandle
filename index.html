@@ -112,22 +112,38 @@
       align-items: center;
       color: var(--text);
       text-align: center;
+      transition: opacity 1s;
     }
     .popup-modal {
       background-color: white;
       padding: 48px;
       border-radius: 36px;
       border: solid 2px var(--gray-highlight);
-      color: var(--red-letter);
+      color: var(--text);
       cursor: default;
+      position: relative;
     }
     #share-line {
       text-decoration: underline;
-      color: #eeb5ae;
+      color: var(--blue-highlight);
       transition: color .15s;
     }
     #share-line:hover {
       cursor: pointer;
+      color: var(--blue-letter);
+    }
+    #finish-close {
+      position: absolute;
+      top: 12px;
+      right: 24px;
+      transform: rotate(45deg);
+      font-weight: 100;
+      font-size: 2em;
+      cursor: pointer;
+      color: var(--red-highlight);
+      transition: color .15s;
+    }
+    #finish-close:hover {
       color: var(--red-letter);
     }
 
@@ -296,8 +312,9 @@
 
 <div id="finish-modal-container" class="popup-modal-container" style="display: none;">
   <div id="finish-modal" class="popup-modal">
-    <div id="win-message" style="font-weight: bold; font-size: 2em; text-transform: uppercase;">Well Done!</div>
-    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--blue-highlight);">FINISHED MAP #<span id="map-number-label">324</span> IN <span id="time-spent-label">02:12s</span></div>
+    <div id="finish-close">+</div>
+    <div id="win-message" style="font-weight: bold; font-size: 1.5em; text-transform: uppercase;">Well Done!</div>
+    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED MAP #<span id="map-number-label">0</span> IN <span id="time-spent-label">02:12s</span></div>
     <div id="share-line">Share your time with friends.</div>
   </div>
 </div>
@@ -328,6 +345,14 @@
 </a>
 
 <script>
+  // get day number (days since aug 1 2025)
+  const startDate = new Date("2025-08-01T00:00:00");
+  const today = new Date();
+  const diffTime = today - startDate;
+  let dayOfMap = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  document.getElementById('map-number-label').innerText = dayOfMap;
+
+  // board params
   const boardCols = 6;
   const boardRows = 8;
 
@@ -819,7 +844,6 @@
   }
 
   // SHARE DATA AND SHARE LINK
-  let dayOfMap = 324;
   let timeSpentSeconds = 121;
   const shareData = {
     title: 'Gerrymandle #' + dayOfMap,
@@ -942,6 +966,7 @@
           console.log("all districts drawn");
           if (redCount > blueCount) {
             console.log("LEVEL WIN!");
+            console.log("Well Done!");
 
             board.style.pointerEvents = "none";  // stop board edits after win
             //board.style.pointerEvents = "auto";  // to reenable events on board reset or something
@@ -954,6 +979,13 @@
                 tile.classList.add('fade-text');
               }, delay);
             });
+
+            document.getElementById('finish-modal-container').style.display = 'flex';
+            document.getElementById('finish-modal-container').style.opacity = '0';
+            setTimeout(() => {
+              document.getElementById('finish-modal-container').style.display = 'flex';
+              document.getElementById('finish-modal-container').style.opacity = '1';
+            }, 1500);
           }
           else {
             console.log("NOT QUITE! LEVEL LOSE!");
@@ -1010,8 +1042,6 @@
     updateDistrictBar();
   });
 
-
-
   const themeSelect = document.getElementById("theme-select");
 
   // Load saved preference
@@ -1056,8 +1086,11 @@
     }
   });
 
-
-
+  // close win modal
+  document.getElementById('finish-close').addEventListener("click", () => {
+    document.getElementById('finish-modal-container').style.display = 'none';
+    document.getElementById('finish-modal-container').style.opacity = '0';
+  });
 
   // start with test level loaded by default
   loadLevel('LVL01');
