@@ -1,704 +1,791 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Gerrymandle</title>
-    <link rel="icon" href="https://em-content.zobj.net/source/joypixels/275/flag-united-states_1f1fa-1f1f8.png">
-    <style>
-        body {
-            font-family: sans-serif;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            height: 100vh;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gerrymandle</title>
+  <link rel="icon" href="https://em-content.zobj.net/source/joypixels/275/flag-united-states_1f1fa-1f1f8.png">
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      height: 100vh;
+    }
 
-        #board-container {
-            position: relative;
-            width: 460px;
-            height: 620px;
-        }
+    #heading {
+      color: #333333;
+      font-family: sans-serif;
+      font-weight: normal;
+      text-transform: uppercase;
+      margin-bottom: 0;
+      border-bottom: 1px solid #ccc;
+      width: 100%;
+      text-align: center;
+    }
 
-        #board {
-            display: grid;
-            grid-template-columns: repeat(6, 60px);
-            grid-template-rows: repeat(8, 60px);
-            gap: 20px;
-            position: absolute;
-            z-index: 2;
-        }
+    #board-container {
+      position: relative;
+      width: 460px;
+      height: 620px;
+      min-height: 620px;
+    }
 
-        .tile {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            font-weight: bold;
-            color: #333;
-            /*cursor: pointer;*/
-            user-select: none;
-        }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-template-rows: repeat(8, 60px);
+      gap: 20px;
+      position: absolute;
+      z-index: 2;
+    }
 
-        /* Highlight classes */
-        .tile.selected {
-            background: #e8e8e8;
-        }
-        .tile.selected-red {
-            background: #eeb5ae;
-        }
-        .tile.selected-blue {
-            background: #aed1ee;
-        }
-        .tile.selected-purple {
-            background: #ddc6ea;
-        }
+    .tile {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: #333;
+      /*cursor: pointer;*/
+      user-select: none;
+    }
 
-        #line-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            pointer-events: none;
-        }
+    /* Highlight classes */
+    .tile.selected {
+      background: #e8e8e8;
+    }
+    .tile.selected-red {
+      background: #eeb5ae;
+    }
+    .tile.selected-blue {
+      background: #aed1ee;
+    }
+    .tile.selected-purple {
+      background: #ddc6ea;
+    }
 
-        #madebysam {
-            color: #333333;
-            cursor: pointer;
-            margin-top: 48px;
-            padding-bottom: 12px;
-            text-align: center;
-            font-size: 0.9rem;
-            text-decoration: none;
-        }
-        #madebysam:hover {
-            text-decoration: underline;
-        }
+    #line-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
 
-        @keyframes pop {
-            0%   { transform: scale(1); }
-            30%  { transform: scale(1.1); }
-            60%  { transform: scale(0.95); }
-            100% { transform: scale(1); }
-        }
+    #level-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px;
+    }
 
-        .tile.pop {
-            animation: pop 250ms ease-out;
-        }
-        .tile.fade-text {
-            transition: color 1s ease;
-            color: transparent !important;
-        }
+    #madebysam {
+      color: #333333;
+      cursor: pointer;
+      margin-top: 36px;
+      padding-bottom: 12px;
+      text-align: center;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+    #madebysam:hover {
+      text-decoration: underline;
+    }
 
-        .district-segment {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-    </style>
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.1); }
+      60%  { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+
+    .tile.pop {
+      animation: pop 250ms ease-out;
+    }
+    .tile.fade-text {
+      transition: color 1s ease;
+      color: transparent !important;
+    }
+
+    .district-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+  </style>
 </head>
 <body>
 
-<div style="width: 100%; height: 23vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
-    <!--    <img src="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/logo.png" height="70px" style="padding-bottom: 20px;">-->
-    <h1 style="color: #333333; font-family: sans-serif; font-weight: normal; text-transform: uppercase;">Gerrymandle</h1>
+<h1 id="heading">Gerrymandle</h1>
+
+<h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
+<h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: #333333;"><b style="color: #5988d1">17</b> - <b style="color: #e05353">13</b>. Help red win!</h3>
+<div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: #e8e8e8; display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
+<div id="board-container">
+  <canvas id="line-canvas" width="460" height="620"></canvas>
+  <div id="board"></div>
 </div>
-<div style="width: 100%; height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center">
-    <h2 id="puzzle-info" style="margin-bottom: 0; color: #333333;">? districts of ?</h2>
-    <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: #333333;"><b style="color: #5988d1">17</b> - <b style="color: #e05353">13</b>. Help red win!</h3>
-    <div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: #e8e8e8; display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
-    <div id="board-container">
-        <canvas id="line-canvas" width="460" height="620"></canvas>
-        <div id="board"></div>
-    </div>
-</div>
-<div style="width: 100%; height: 17vh; display: flex; flex-direction: column; justify-content: end; align-items: center">
-    <div style="display: flex; gap: 8px;">
-        <button onclick="loadLevel('LVL01')">Load LVL01</button>
-        <button onclick="loadLevel('LVL02')">Load LVL02</button>
-        <button onclick="loadLevel('LVL03')">Load LVL03</button>
-        <button onclick="loadLevel('LVL04')">Load LVL04</button>
-    </div>
-    <a id="madebysam" href="https://sambender.net">
-        Made with ❤️ by Sam Bender
-    </a>
-</div>
+
+<div id="level-buttons"></div>
+
+<a id="madebysam" href="https://sambender.net">
+  Made with ❤️ by Sam Bender
+</a>
 
 <script>
-    const boardCols = 6;
-    const boardRows = 8;
+  const boardCols = 6;
+  const boardRows = 8;
 
-    const levels = {
-        LVL01: ["5", "6",
-            " ", "R", " ", "B", "B", " ",
-            "R", "B", "B", "R", "B", "R",
-            "B", "R", "B", "B", "R", " ",
-            " ", "B", "R", "B", "O", "B",
-            "R", "O", "R", "B", "B", " ",
-            "R", "B", "R", " ", "R", "B",
-            " ", "R", "B", "B", "O", " ",
-            " ", " ", " ", " ", " ", " "
-        ],
-        LVL02: ["6", "8", //3x16 works too
-            "R", "R", "R", "R", "R", "R",
-            "R", "R", "R", "R", "R", "R",
-            "B", "B", "B", "B", "R", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R",
-            "B", "B", "B", "B", "B", "R"
-        ],
-        LVL03: ["5", "3",
-            " ", " ", " ", " ", " ", " ",
-            " ", " ", "B", " ", "B", "B",
-            " ", "R", "R", "O", "O", " ",
-            " ", "R", "B", "B", " ", " ",
-            " ", "R", "R", " ", " ", " ",
-            "B", "R", "B", " ", " ", " ",
-            " ", "B", "B", " ", " ", " ",
-            " ", " ", " ", " ", " ", " "
-        ],
-        LVL04: ["5", "4",
-            " ", " ", " ", " ", " ", " ",
-            " ", "B", " ", "B", "R", " ",
-            "B", " ", "O", "O", "R", "R",
-            " ", "O", "B", "B", " ", "O",
-            " ", "B", "R", "B", "B", "O",
-            "R", "O", "R", "R", "B", "R",
-            " ", " ", "B", "R", "B", " ",
-            " ", " ", " ", " ", " ", " "
-        ]
-    };
+  const levels = {
+    LVL00: ["14", "3",
+      "B", "B", "B", "B", "B", "B",
+      "R", "R", "B", "R", "R", "B",
+      "R", "R", "B", "R", "R", "B",
+      "B", "B", "B", "B", "B", "B",
+      "R", "R", "B", "R", "R", "B",
+      "R", "R", "B", "R", "R", "B",
+      "R", "R", "B", "R", "R", "B",
+      "B", "B", "B", "B", "B", "B"
+    ],
+    LVL01: ["5", "3",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", " ", "O", "R", "R",
+      "R", "B", "B", "B", "O", " ",
+      " ", "B", "B", " ", "O", " ",
+      " ", "R", "O", "B", " ", "B",
+      " ", "R", "O", "B", " ", " ",
+      " ", " ", "R", "B", "O", " ",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL02: ["5", "3",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", "B", " ", "B", "B",
+      " ", "R", "R", "O", "O", " ",
+      " ", "R", "B", "B", " ", " ",
+      " ", "R", "R", " ", " ", " ",
+      "B", "R", "B", " ", " ", " ",
+      " ", "B", "B", " ", " ", " ",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL03: ["7", "3",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", "B", "B", "B", "B",
+      " ", " ", "B", "B", "B", " ",
+      " ", "B", "B", "R", "O", "R",
+      "R", "R", "R", "B", "B", "R",
+      "R", "R", "B", "O", "R", " ",
+      " ", "O", "O", " ", " ", " ",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL04: ["5", "5",
+      " ", "R", "B", "O", " ", " ",
+      "R", "B", "R", "B", "O", " ",
+      " ", "B", "B", "O", "B", "O",
+      " ", "B", "O", "B", "O", "B",
+      "B", "B", "B", "R", "B", " ",
+      " ", " ", "B", "R", "R", " ",
+      " ", "B", "R", "R", "O", "R",
+      " ", " ", "R", "O", " ", " "
+    ],
+    LVL05: ["5", "3",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", " ", " ", " ", " ",
+      "R", "R", "B", "O", " ", " ",
+      " ", "B", "B", "B", "B", "R",
+      "R", "O", "B", "B", "R", "B",
+      "B", " ", "O", "R", " ", " ",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL06: ["5", "4",
+      " ", " ", " ", " ", " ", " ",
+      " ", "B", " ", "B", "R", " ",
+      "B", " ", "O", "O", "R", "R",
+      " ", "O", "B", "B", " ", "O",
+      " ", "B", "R", "B", "B", "O",
+      "R", "O", "R", "R", "B", "R",
+      " ", " ", "B", "R", "B", " ",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL07: ["5", "3",
+      " ", " ", " ", " ", " ", " ",
+      " ", " ", " ", "O", "B", "B",
+      "O", "O", "O", "B", "O", "B",
+      "B", "R", "R", "B", "O", "O",
+      "R", " ", "B", " ", "O", "R",
+      " ", " ", " ", "B", "R", "O",
+      " ", " ", " ", " ", "R", "B",
+      " ", " ", " ", " ", " ", " "
+    ],
+    LVL08: ["5", "5",
+      " ", " ", " ", " ", "B", "B",
+      " ", " ", " ", "R", "B", "O",
+      "B", "R", "R", "B", "B", " ",
+      " ", " ", "O", " ", "B", "R",
+      "R", "B", "B", " ", "B", "B",
+      " ", " ", "B", " ", "R", "R",
+      " ", " ", " ", "R", "R", "B",
+      " ", " ", " ", "R", "B", "B"
+    ],
+    LVL09: ["5", "6",
+      " ", "R", " ", "B", "B", " ",
+      "R", "B", "B", "R", "B", "R",
+      "B", "R", "B", "B", "R", " ",
+      " ", "B", "R", "B", "O", "B",
+      "R", "O", "R", "B", "B", " ",
+      "R", "B", "R", " ", "R", "B",
+      " ", "R", "B", "B", "O", " ",
+      " ", " ", " ", " ", " ", " "
+    ]
+  };
 
-    let currentDistrictCount = 0;
-    let currentVoteCount = 0;
+  function generateLevelButtons() {
+    const container = document.getElementById("level-buttons");
+    for (const key in levels) {
+      const btn = document.createElement("button");
+      btn.innerText = key;
+      btn.onclick = () => loadLevel(key);
+      container.appendChild(btn);
+    }
+  }
+  generateLevelButtons();
 
-    let levelData = [];
-    let finalizedDistricts = [];
+  let currentDistrictCount = 0;
+  let currentVoteCount = 0;
 
-    function loadLevel(levelName) {
-        if (!levels[levelName]) return;
+  let levelData = [];
+  let finalizedDistricts = [];
 
-        board.style.pointerEvents = "auto";
+  function loadLevel(levelName) {
+    if (!levels[levelName]) return;
 
-        const data = levels[levelName];
+    board.style.pointerEvents = "auto";
 
-        currentDistrictCount = parseInt(data[0]);
-        currentVoteCount = parseInt(data[1]);
+    const data = levels[levelName];
 
-        // Update levelData
-        levelData.length = 0;
-        levelData.push(...data);
+    currentDistrictCount = parseInt(data[0]);
+    currentVoteCount = parseInt(data[1]);
 
-        // Clear previous state
-        finalizedDistricts = [];
-        board.innerHTML = "";
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Update levelData
+    levelData.length = 0;
+    levelData.push(...data);
 
-        // Rebuild board
-        let index = 2;
-        for (let row = 0; row < boardRows; row++) {
-            for (let col = 0; col < boardCols; col++) {
-                const tile = document.createElement("div");
-                tile.classList.add("tile");
+    // Clear previous state
+    finalizedDistricts = [];
+    board.innerHTML = "";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                const letter = data[index] || "";
-                tile.textContent = letter;
-                if (letter === "B") {
-                    tile.style.color = "#5988d1";
-                    tile.style.cursor = "pointer";
-                }
-                if (letter === "R") {
-                    tile.style.color = "#e05353";
-                    tile.style.cursor = "pointer";
-                }
-                if (letter === "O") {
-                    tile.style.color = "#dadada";
-                    tile.style.cursor = "pointer";
-                }
+    // Rebuild board
+    let index = 2;
+    for (let row = 0; row < boardRows; row++) {
+      for (let col = 0; col < boardCols; col++) {
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
 
-                tile.dataset.row = row;
-                tile.dataset.col = col;
-
-                tile.addEventListener("click", () => {
-                    if (isTileFinalized(tile)) {
-                        removeDistrictContainingTile(tile);
-                        drawLines();
-                    }
-                });
-
-                board.appendChild(tile);
-                index++;
-            }
+        const letter = data[index] || "";
+        tile.textContent = letter;
+        if (letter === "B") {
+          tile.style.color = "#5988d1";
+          tile.style.cursor = "pointer";
+          //tile.innerText = "Blue";
+        }
+        if (letter === "R") {
+          tile.style.color = "#e05353";
+          tile.style.cursor = "pointer";
+          //tile.innerText = "Red";
+        }
+        if (letter === "O") {
+          tile.style.color = "#dadada";
+          tile.style.cursor = "pointer";
         }
 
-        setInfo();
-        updateVoteTotals();
-        updateDistrictBar();
+        tile.dataset.row = row;
+        tile.dataset.col = col;
+
+        tile.addEventListener("click", () => {
+          if (isTileFinalized(tile)) {
+            removeDistrictContainingTile(tile);
+            drawLines();
+          }
+        });
+
+        board.appendChild(tile);
+        index++;
+      }
     }
 
-    const board = document.getElementById("board");
-    const canvas = document.getElementById("line-canvas");
-    const ctx = canvas.getContext("2d");
-    let isMouseDown = false;
-    let path = [];
-
-    function setInfo() {
-        const today = new Date();
-        const mm = today.getMonth() + 1;
-        const dd = today.getDate();
-        const yy = String(today.getFullYear()).slice(-2);
-        const formattedDate = `${mm}/${dd}/${yy}`;
-
-        //document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
-        document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
-    }
-    function updateVoteTotals() {
-        const rTotal = levelData.filter(cell => cell === "R").length;
-        const bTotal = levelData.filter(cell => cell === "B").length;
-
-        const subInfo = document.getElementById('puzzle-subinfo');
-        subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help red win!`;
-    }
     setInfo();
     updateVoteTotals();
+    updateDistrictBar();
+  }
 
-    function updateDistrictBar() {
-        const bar = document.getElementById("puzzle-districtbar");
+  const board = document.getElementById("board");
+  const canvas = document.getElementById("line-canvas");
+  const ctx = canvas.getContext("2d");
+  let isMouseDown = false;
+  let path = [];
 
-        const total = currentDistrictCount;
-        let red = 0, blue = 0, purple = 0;
+  function setInfo() {
+    const today = new Date();
+    const mm = today.getMonth() + 1;
+    const dd = today.getDate();
+    const yy = String(today.getFullYear()).slice(-2);
+    const formattedDate = `${mm}/${dd}/${yy}`;
 
+    //document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
+    document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
+  }
+  function updateVoteTotals() {
+    const rTotal = levelData.filter(cell => cell === "R").length;
+    const bTotal = levelData.filter(cell => cell === "B").length;
+
+    const subInfo = document.getElementById('puzzle-subinfo');
+    subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help red win!`;
+  }
+  setInfo();
+  updateVoteTotals();
+
+  function updateDistrictBar() {
+    const bar = document.getElementById("puzzle-districtbar");
+
+    const total = currentDistrictCount;
+    let red = 0, blue = 0, purple = 0;
+
+    finalizedDistricts.forEach(d => {
+      if (d.colorClass === "selected-red") red++;
+      else if (d.colorClass === "selected-blue") blue++;
+      else if (d.colorClass === "selected-purple") purple++;
+    });
+
+    const remaining = total - red - blue - purple;
+
+    const segments = [
+      { key: "red", count: red, color: "#eeb5ae" },
+      { key: "blue", count: blue, color: "#aed1ee" },
+      { key: "purple", count: purple, color: "#ddc6ea" },
+      { key: "gray", count: remaining, color: "#e8e8e8" }
+    ];
+
+    // Create or reuse segment elements
+    segments.forEach((seg, index) => {
+      let segment = bar.children[index];
+      if (!segment) {
+        segment = document.createElement("div");
+        segment.className = "district-segment";
+        segment.style.background = seg.color;
+        segment.style.width = "0"; // Start at 0 width
+        bar.appendChild(segment);
+
+        // Force a reflow
+        void segment.offsetWidth;
+
+        // Now animate to final width
+        requestAnimationFrame(() => {
+          segment.style.width = `${(seg.count / total) * 100}%`;
+        });
+      } else {
+        segment.style.width = `${(seg.count / total) * 100}%`;
+      }
+    });
+
+    // Remove extra segments
+    while (bar.children.length > segments.length) {
+      bar.removeChild(bar.lastChild);
+    }
+  }
+
+
+  function getTileCenter(tile) {
+    const rect = tile.getBoundingClientRect();
+    const parentRect = board.getBoundingClientRect();
+    return {
+      x: rect.left - parentRect.left + rect.width / 2,
+      y: rect.top - parentRect.top + rect.height / 2
+    };
+  }
+
+  // Draw lines connecting tiles for given path with specified color and line width
+  function drawPathLines(pathTiles, color, lineWidth = 16) {
+    if (pathTiles.length < 2) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    const start = getTileCenter(pathTiles[0]);
+    ctx.moveTo(start.x, start.y);
+    for (let i = 1; i < pathTiles.length; i++) {
+      const point = getTileCenter(pathTiles[i]);
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.stroke();
+  }
+
+  function updateCurrentPathColors() {
+    if (path.length === 0) return;
+
+    const votes = path.map(t => t.textContent);
+    const rCount = votes.filter(v => v === "R").length;
+    const bCount = votes.filter(v => v === "B").length;
+
+    // Remove all color classes first
+    path.forEach(t => {
+      t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+    });
+
+    const voteCount = path.filter(t => {
+      const val = t.textContent.trim();
+      return val === "R" || val === "B";
+    }).length;
+
+    if (voteCount >= currentVoteCount) {
+      // Apply matching color class
+      if (rCount > bCount) {
+        path.forEach(t => t.classList.add("selected-red"));
+      } else if (bCount > rCount) {
+        path.forEach(t => t.classList.add("selected-blue"));
+      } else {
+        path.forEach(t => t.classList.add("selected-purple"));
+      }
+    } else {
+      // Not full length apply default selected bg
+      path.forEach(t => t.classList.add("selected"));
+    }
+  }
+
+  // draws all finalized districts lines plus current drawing path line
+  function drawLines() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw finalized districts lines first
+    finalizedDistricts.forEach(district => {
+      const color = getStrokeColorForClass(district.colorClass);
+      drawPathLines(district.tiles, color);
+    });
+
+    // Draw current path line if any
+    if (path.length < 2) return;
+
+    const voteCount = path.filter(t => {
+      const val = t.textContent.trim();
+      return val === "R" || val === "B";
+    }).length;
+
+    if (voteCount >= currentVoteCount) {
+      const strokeColor = finalizePathColor();
+      drawPathLines(path, strokeColor);
+    } else {
+      drawPathLines(path, "#e8e8e8");
+    }
+
+  }
+
+  // get stroke color string for given tile class
+  function getStrokeColorForClass(colorClass) {
+    switch (colorClass) {
+      case "selected-red": return "#eeb5ae";
+      case "selected-blue": return "#aed1ee";
+      case "selected-purple": return "#ddc6ea";
+      default: return "#e8e8e8";
+    }
+  }
+
+  function areAdjacent(tile1, tile2) {
+    const r1 = +tile1.dataset.row;
+    const c1 = +tile1.dataset.col;
+    const r2 = +tile2.dataset.row;
+    const c2 = +tile2.dataset.col;
+
+    const rowDiff = r2 - r1;
+    const colDiff = c2 - c1;
+
+    const absRow = Math.abs(rowDiff);
+    const absCol = Math.abs(colDiff);
+
+    if (absRow > 1 || absCol > 1 || (absRow === 0 && absCol === 0)) return false;
+
+    // Diagonal move
+    if (absRow === 1 && absCol === 1) {
+      const midTileA = document.querySelector(`[data-row="${r1}"][data-col="${c2}"]`);
+      const midTileB = document.querySelector(`[data-row="${r2}"][data-col="${c1}"]`);
+
+      // Check if either of the mid-tiles are connected by a finalized district
+      for (const district of finalizedDistricts) {
+        if (
+                midTileA && midTileB &&
+                district.tiles.includes(midTileA) &&
+                district.tiles.includes(midTileB)
+        ) {
+          // They're both in a district — check if they're directly connected
+          const idxA = district.tiles.indexOf(midTileA);
+          const idxB = district.tiles.indexOf(midTileB);
+          if (Math.abs(idxA - idxB) === 1) {
+            return false; // A connector exists — block diagonal
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+
+  function clearPath() {
+    path.forEach(t => {
+      if (!isTileFinalized(t)) {
+        t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+      }
+    });
+    path = [];
+    drawLines();
+  }
+
+  function isTileFinalized(tile) {
+    return finalizedDistricts.some(district => district.tiles.includes(tile));
+  }
+
+  function removeDistrictContainingTile(tile) {
+    for (let i = 0; i < finalizedDistricts.length; i++) {
+      const district = finalizedDistricts[i];
+      if (district.tiles.includes(tile)) {
+        // Log what colord district is removed
+        let colorName = "purple";
+        if (district.colorClass === "selected-red") colorName = "red";
+        else if (district.colorClass === "selected-blue") colorName = "blue";
+        console.log(`${colorName} district removed`);
+
+        district.tiles.forEach(t => {
+          t.classList.remove("selected-red", "selected-blue", "selected-purple");
+        });
+        finalizedDistricts.splice(i, 1);
+
+        // Log updated totals
+        let redCount = 0, blueCount = 0, purpleCount = 0;
         finalizedDistricts.forEach(d => {
-            if (d.colorClass === "selected-red") red++;
-            else if (d.colorClass === "selected-blue") blue++;
-            else if (d.colorClass === "selected-purple") purple++;
+          if (d.colorClass === "selected-red") redCount++;
+          else if (d.colorClass === "selected-blue") blueCount++;
+          else if (d.colorClass === "selected-purple") purpleCount++;
+        });
+        console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
+
+        updateDistrictBar();
+
+        break;
+      }
+    }
+  }
+
+  let index = 2; // skip the first two (district x vote var counts)
+  for (let row = 0; row < boardRows; row++) {
+    for (let col = 0; col < boardCols; col++) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+
+      const letter = levelData[index] || "";
+      tile.textContent = letter;
+      if (letter === "B") {
+        tile.style.color = "#5988d1";
+        tile.style.cursor = "pointer";
+      }
+      if (letter === "R") {
+        tile.style.color = "#e05353";
+        tile.style.cursor = "pointer";
+      }
+      if (letter === "O") {
+        tile.style.color = "#dadada";
+        tile.style.cursor = "pointer";
+      }
+
+      tile.dataset.row = row;
+      tile.dataset.col = col;
+
+      tile.addEventListener("click", () => {
+        if (isTileFinalized(tile)) {
+          removeDistrictContainingTile(tile);
+          drawLines();
+        }
+      });
+
+      board.appendChild(tile);
+      index++;
+    }
+  }
+
+  board.addEventListener("mousedown", (e) => {
+    if (!e.target.classList.contains("tile")) return;
+    if (isTileFinalized(e.target)) return;
+    if (e.target.textContent.trim() === "") return;  //prevents selecting blank spaces
+
+    clearPath();
+    isMouseDown = true;
+
+    path.push(e.target);
+    updateCurrentPathColors();
+    drawLines();
+
+    e.target.classList.add("pop");
+    e.target.addEventListener("animationend", () => {
+      e.target.classList.remove("pop");
+    }, { once: true });
+  });
+
+  board.addEventListener("mouseover", (e) => {
+    if (!isMouseDown || !e.target.classList.contains("tile")) return;
+    if (isTileFinalized(e.target)) return;
+
+    const currentTile = e.target;
+    if (currentTile.textContent.trim() === "") return;  //prevents selecting blank spaces
+
+    const last = path[path.length - 1];
+    const secondLast = path[path.length - 2];
+
+    // Allow retreating
+    if (secondLast === currentTile) {
+      const removed = path.pop();
+      removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+      updateCurrentPathColors();
+      drawLines();
+      return;
+    }
+
+    const voteCount = path.filter(t => {
+      const val = t.textContent.trim();
+      return val === "R" || val === "B";
+    }).length;
+
+    const atLimit = voteCount >= currentVoteCount;
+
+    if (atLimit) return;
+
+    if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
+      path.push(currentTile);
+      updateCurrentPathColors();
+      drawLines();
+
+      currentTile.classList.add("pop");
+      currentTile.addEventListener("animationend", () => {
+        currentTile.classList.remove("pop");
+      }, { once: true });
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (path.length > 0) {
+      const word = path.map(t => t.textContent).join("");
+      // console.log("Selected word:", word);
+
+      const voteCount = path.filter(t => {
+        const val = t.textContent.trim();
+        return val === "R" || val === "B";
+      }).length;
+
+      if (voteCount === currentVoteCount) {
+        // Finalize district
+        const colorClass = getFinalColorClass();
+
+        finalizedDistricts.push({
+          tiles: [...path],
+          colorClass
         });
 
-        const remaining = total - red - blue - purple;
-
-        const segments = [
-            { key: "red", count: red, color: "#eeb5ae" },
-            { key: "blue", count: blue, color: "#aed1ee" },
-            { key: "purple", count: purple, color: "#ddc6ea" },
-            { key: "gray", count: remaining, color: "#e8e8e8" }
-        ];
-
-        // Create or reuse segment elements
-        segments.forEach((seg, index) => {
-            let segment = bar.children[index];
-            if (!segment) {
-                segment = document.createElement("div");
-                segment.className = "district-segment";
-                segment.style.background = seg.color;
-                segment.style.width = "0"; // Start at 0 width
-                bar.appendChild(segment);
-
-                // Force a reflow
-                void segment.offsetWidth;
-
-                // Now animate to final width
-                requestAnimationFrame(() => {
-                    segment.style.width = `${(seg.count / total) * 100}%`;
-                });
-            } else {
-                segment.style.width = `${(seg.count / total) * 100}%`;
-            }
-        });
-
-        // Remove extra segments
-        while (bar.children.length > segments.length) {
-            bar.removeChild(bar.lastChild);
-        }
-    }
-
-
-    function getTileCenter(tile) {
-        const rect = tile.getBoundingClientRect();
-        const parentRect = board.getBoundingClientRect();
-        return {
-            x: rect.left - parentRect.left + rect.width / 2,
-            y: rect.top - parentRect.top + rect.height / 2
-        };
-    }
-
-    // Draw lines connecting tiles for given path with specified color and line width
-    function drawPathLines(pathTiles, color, lineWidth = 16) {
-        if (pathTiles.length < 2) return;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lineWidth;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        const start = getTileCenter(pathTiles[0]);
-        ctx.moveTo(start.x, start.y);
-        for (let i = 1; i < pathTiles.length; i++) {
-            const point = getTileCenter(pathTiles[i]);
-            ctx.lineTo(point.x, point.y);
-        }
-        ctx.stroke();
-    }
-
-    function updateCurrentPathColors() {
-        if (path.length === 0) return;
-
-        const votes = path.map(t => t.textContent);
-        const rCount = votes.filter(v => v === "R").length;
-        const bCount = votes.filter(v => v === "B").length;
-
-        // Remove all color classes first
+        // remove temp selected class and apply final color class only
         path.forEach(t => {
-            t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+          t.classList.remove("selected");
+          t.classList.add(colorClass);
         });
 
-        const voteCount = path.filter(t => {
-            const val = t.textContent.trim();
-            return val === "R" || val === "B";
-        }).length;
+        // log district color drawn
+        let colorName = "purple";
+        if (colorClass === "selected-red") colorName = "red";
+        else if (colorClass === "selected-blue") colorName = "blue";
+        console.log(`${colorName} district drawn`);
 
-        if (voteCount >= currentVoteCount) {
-            // Apply matching color class
-            if (rCount > bCount) {
-                path.forEach(t => t.classList.add("selected-red"));
-            } else if (bCount > rCount) {
-                path.forEach(t => t.classList.add("selected-blue"));
-            } else {
-                path.forEach(t => t.classList.add("selected-purple"));
-            }
-        } else {
-            // Not full length apply default selected bg
-            path.forEach(t => t.classList.add("selected"));
-        }
-    }
-
-    // draws all finalized districts lines plus current drawing path line
-    function drawLines() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw finalized districts lines first
+        // Count totals
+        let redCount = 0, blueCount = 0, purpleCount = 0;
         finalizedDistricts.forEach(district => {
-            const color = getStrokeColorForClass(district.colorClass);
-            drawPathLines(district.tiles, color);
+          if (district.colorClass === "selected-red") redCount++;
+          else if (district.colorClass === "selected-blue") blueCount++;
+          else if (district.colorClass === "selected-purple") purpleCount++;
         });
+        console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
 
-        // Draw current path line if any
-        if (path.length < 2) return;
+        updateDistrictBar();
 
-        const voteCount = path.filter(t => {
-            const val = t.textContent.trim();
-            return val === "R" || val === "B";
-        }).length;
+        if (finalizedDistricts.length === currentDistrictCount) {
+          console.log("all districts drawn");
+          if (redCount > blueCount) {
+            console.log("LEVEL WIN!");
 
-        if (voteCount >= currentVoteCount) {
-            const strokeColor = finalizePathColor();
-            drawPathLines(path, strokeColor);
-        } else {
-            drawPathLines(path, "#e8e8e8");
+            board.style.pointerEvents = "none";  // stop board edits after win
+            //board.style.pointerEvents = "auto";  // to reenable events on board reset or something
+
+            document.querySelectorAll('.tile').forEach(tile => {
+              const row = parseInt(tile.dataset.row);
+              const col = parseInt(tile.dataset.col);
+              const delay = (row * boardCols + col) * 15;
+              setTimeout(() => {
+                tile.classList.add('fade-text');
+              }, delay);
+            });
+          }
+          else {
+            console.log("NOT QUITE! LEVEL LOSE!");
+            // todo - show up "reset?" button
+          }
         }
 
-    }
-
-    // get stroke color string for given tile class
-    function getStrokeColorForClass(colorClass) {
-        switch (colorClass) {
-            case "selected-red": return "#eeb5ae";
-            case "selected-blue": return "#aed1ee";
-            case "selected-purple": return "#ddc6ea";
-            default: return "#e8e8e8";
-        }
-    }
-
-    function areAdjacent(tile1, tile2) {
-        const r1 = +tile1.dataset.row;
-        const c1 = +tile1.dataset.col;
-        const r2 = +tile2.dataset.row;
-        const c2 = +tile2.dataset.col;
-
-        const rowDiff = r2 - r1;
-        const colDiff = c2 - c1;
-
-        const absRow = Math.abs(rowDiff);
-        const absCol = Math.abs(colDiff);
-
-        if (absRow > 1 || absCol > 1 || (absRow === 0 && absCol === 0)) return false;
-
-        // Diagonal move
-        if (absRow === 1 && absCol === 1) {
-            const midTileA = document.querySelector(`[data-row="${r1}"][data-col="${c2}"]`);
-            const midTileB = document.querySelector(`[data-row="${r2}"][data-col="${c1}"]`);
-
-            // Check if either of the mid-tiles are connected by a finalized district
-            for (const district of finalizedDistricts) {
-                if (
-                    midTileA && midTileB &&
-                    district.tiles.includes(midTileA) &&
-                    district.tiles.includes(midTileB)
-                ) {
-                    // They're both in a district — check if they're directly connected
-                    const idxA = district.tiles.indexOf(midTileA);
-                    const idxB = district.tiles.indexOf(midTileB);
-                    if (Math.abs(idxA - idxB) === 1) {
-                        return false; // A connector exists — block diagonal
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-
-    function clearPath() {
-        path.forEach(t => {
-            if (!isTileFinalized(t)) {
-                t.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
-            }
-        });
         path = [];
         drawLines();
-    }
-
-    function isTileFinalized(tile) {
-        return finalizedDistricts.some(district => district.tiles.includes(tile));
-    }
-
-    function removeDistrictContainingTile(tile) {
-        for (let i = 0; i < finalizedDistricts.length; i++) {
-            const district = finalizedDistricts[i];
-            if (district.tiles.includes(tile)) {
-                // Log what colord district is removed
-                let colorName = "purple";
-                if (district.colorClass === "selected-red") colorName = "red";
-                else if (district.colorClass === "selected-blue") colorName = "blue";
-                console.log(`${colorName} district removed`);
-
-                district.tiles.forEach(t => {
-                    t.classList.remove("selected-red", "selected-blue", "selected-purple");
-                });
-                finalizedDistricts.splice(i, 1);
-
-                // Log updated totals
-                let redCount = 0, blueCount = 0, purpleCount = 0;
-                finalizedDistricts.forEach(d => {
-                    if (d.colorClass === "selected-red") redCount++;
-                    else if (d.colorClass === "selected-blue") blueCount++;
-                    else if (d.colorClass === "selected-purple") purpleCount++;
-                });
-                console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
-
-                updateDistrictBar();
-
-                break;
-            }
-        }
-    }
-
-    let index = 2; // skip the first two (district x vote var counts)
-    for (let row = 0; row < boardRows; row++) {
-        for (let col = 0; col < boardCols; col++) {
-            const tile = document.createElement("div");
-            tile.classList.add("tile");
-
-            const letter = levelData[index] || "";
-            tile.textContent = letter;
-            if (letter === "B") {
-                tile.style.color = "#5988d1";
-                tile.style.cursor = "pointer";
-            }
-            if (letter === "R") {
-                tile.style.color = "#e05353";
-                tile.style.cursor = "pointer";
-            }
-            if (letter === "O") {
-                tile.style.color = "#dadada";
-                tile.style.cursor = "pointer";
-            }
-
-            tile.dataset.row = row;
-            tile.dataset.col = col;
-
-            tile.addEventListener("click", () => {
-                if (isTileFinalized(tile)) {
-                    removeDistrictContainingTile(tile);
-                    drawLines();
-                }
-            });
-
-            board.appendChild(tile);
-            index++;
-        }
-    }
-
-    board.addEventListener("mousedown", (e) => {
-        if (!e.target.classList.contains("tile")) return;
-        if (isTileFinalized(e.target)) return;
-        if (e.target.textContent.trim() === "") return;  //prevents selecting blank spaces
-
+      } else {
         clearPath();
-        isMouseDown = true;
-
-        path.push(e.target);
-        updateCurrentPathColors();
-        drawLines();
-
-        e.target.classList.add("pop");
-        e.target.addEventListener("animationend", () => {
-            e.target.classList.remove("pop");
-        }, { once: true });
-    });
-
-    board.addEventListener("mouseover", (e) => {
-        if (!isMouseDown || !e.target.classList.contains("tile")) return;
-        if (isTileFinalized(e.target)) return;
-
-        const currentTile = e.target;
-        if (currentTile.textContent.trim() === "") return;  //prevents selecting blank spaces
-
-        const last = path[path.length - 1];
-        const secondLast = path[path.length - 2];
-
-        // Allow retreating
-        if (secondLast === currentTile) {
-            const removed = path.pop();
-            removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
-            updateCurrentPathColors();
-            drawLines();
-            return;
-        }
-
-        const voteCount = path.filter(t => {
-            const val = t.textContent.trim();
-            return val === "R" || val === "B";
-        }).length;
-
-        const atLimit = voteCount >= currentVoteCount;
-
-        if (atLimit) return;
-
-        if (!path.includes(currentTile) && areAdjacent(last, currentTile)) {
-            path.push(currentTile);
-            updateCurrentPathColors();
-            drawLines();
-
-            currentTile.classList.add("pop");
-            currentTile.addEventListener("animationend", () => {
-                currentTile.classList.remove("pop");
-            }, { once: true });
-        }
-    });
-
-    window.addEventListener("mouseup", () => {
-        if (path.length > 0) {
-            const word = path.map(t => t.textContent).join("");
-            // console.log("Selected word:", word);
-
-            const voteCount = path.filter(t => {
-                const val = t.textContent.trim();
-                return val === "R" || val === "B";
-            }).length;
-
-            if (voteCount === currentVoteCount) {
-                // Finalize district
-                const colorClass = getFinalColorClass();
-
-                finalizedDistricts.push({
-                    tiles: [...path],
-                    colorClass
-                });
-
-                // remove temp selected class and apply final color class only
-                path.forEach(t => {
-                    t.classList.remove("selected");
-                    t.classList.add(colorClass);
-                });
-
-                // log district color drawn
-                let colorName = "purple";
-                if (colorClass === "selected-red") colorName = "red";
-                else if (colorClass === "selected-blue") colorName = "blue";
-                console.log(`${colorName} district drawn`);
-
-                // Count totals
-                let redCount = 0, blueCount = 0, purpleCount = 0;
-                finalizedDistricts.forEach(district => {
-                    if (district.colorClass === "selected-red") redCount++;
-                    else if (district.colorClass === "selected-blue") blueCount++;
-                    else if (district.colorClass === "selected-purple") purpleCount++;
-                });
-                console.log(`total red: ${redCount}, total blue: ${blueCount}, total purple: ${purpleCount}`);
-
-                updateDistrictBar();
-
-                if (finalizedDistricts.length === currentDistrictCount) {
-                    console.log("all districts drawn");
-                    if (redCount > blueCount) {
-                        console.log("LEVEL WIN!");
-
-                        board.style.pointerEvents = "none";  // stop board edits after win
-                        //board.style.pointerEvents = "auto";  // to reenable events on board reset or something
-
-                        setTimeout(function() {
-                            document.querySelectorAll('.tile').forEach(tile => {
-                                tile.classList.add('fade-text');
-                            });
-                        }, 500);
-                    }
-                    else {
-                        console.log("NOT QUITE! LEVEL LOSE!");
-                        // todo - show up "reset?" button
-                    }
-                }
-
-                path = [];
-                drawLines();
-            } else {
-                clearPath();
-            }
-        }
-        isMouseDown = false;
-    });
+      }
+    }
+    isMouseDown = false;
+  });
 
 
-    window.addEventListener("mouseleave", () => {
-        isMouseDown = false;
-    });
+  window.addEventListener("mouseleave", () => {
+    isMouseDown = false;
+  });
 
-    function getFinalColorClass() {
-        const votes = path
+  function getFinalColorClass() {
+    const votes = path
             .map(t => t.textContent)
             .filter(v => v !== "O");
-        const rCount = votes.filter(v => v === "R").length;
-        const bCount = votes.filter(v => v === "B").length;
+    const rCount = votes.filter(v => v === "R").length;
+    const bCount = votes.filter(v => v === "B").length;
 
-        if (rCount > bCount) return "selected-red";
-        else if (bCount > rCount) return "selected-blue";
-        else return "selected-purple";
-    }
+    if (rCount > bCount) return "selected-red";
+    else if (bCount > rCount) return "selected-blue";
+    else return "selected-purple";
+  }
 
-    function finalizePathColor() {
-        const votes = path
+  function finalizePathColor() {
+    const votes = path
             .map(t => t.textContent)
             .filter(v => v !== "O");
-        const rCount = votes.filter(v => v === "R").length;
-        const bCount = votes.filter(v => v === "B").length;
+    const rCount = votes.filter(v => v === "R").length;
+    const bCount = votes.filter(v => v === "B").length;
 
-        if (rCount > bCount) return "#eeb5ae";
-        else if (bCount > rCount) return "#aed1ee";
-        else return "#ddc6ea";
-    }
+    if (rCount > bCount) return "#eeb5ae";
+    else if (bCount > rCount) return "#aed1ee";
+    else return "#ddc6ea";
+  }
 
-    window.addEventListener("resize", () => {
-        drawLines();
-    });
+  window.addEventListener("resize", () => {
+    drawLines();
+  });
 
-    // start with test level loaded by default
-    loadLevel('LVL01');
+  // start with test level loaded by default
+  loadLevel('LVL01');
 </script>
 </body>
 </html>
