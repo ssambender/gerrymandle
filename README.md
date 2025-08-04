@@ -17,6 +17,7 @@ ___
 ### Features
 - Drag and select puzzle board
 - Live update percent bar
+- Dark theme support
 
 ---
 
@@ -24,7 +25,7 @@ ___
 ### Planned features:
 - [ ] Mobile support
 - [ ] Daily randomization
-- [ ] Share feature
+- [X] Share feature
 - [ ] Saved progress cache
 - [ ] Timer
 
