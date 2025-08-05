@@ -287,12 +287,15 @@
       pointer-events: none;
     }
 
+    #timelabel {
+      color: var(--text);
+    }
+
     #level-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       margin-top: 12px;
-      padding: 10px;
       justify-content: center;
       align-items: center;
     }
@@ -445,7 +448,7 @@
   <div id="finish-modal" class="popup-modal">
     <div id="finish-close" class="modal-close">+</div>
     <div id="win-message" style="font-weight: bold; font-size: 1.5em; text-transform: uppercase;">Well Done!</div>
-    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED MAP #<span id="map-number-label">0</span> IN <span id="time-spent-label">02:12s</span></div>
+    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED MAP #<span id="map-number-label">0</span> IN <span id="time-spent-label">##:##s</span></div>
     <div id="share-line">Share your time with friends.</div>
   </div>
 </div>
@@ -457,11 +460,13 @@
 
 <h2 id="puzzle-info" style="margin-bottom: 0; color: var(--text);">? districts of ?</h2>
 <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text);"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
-<div id="puzzle-districtbar" style="margin-top: 10px; width: 260px; height: 20px; background: var(--gray-highlight); display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
+<div id="puzzle-districtbar" style="margin-top: 4px; width: 260px; height: 20px; background: var(--gray-highlight); display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
 <div id="board-container">
   <canvas id="line-canvas" width="460" height="620"></canvas>
   <div id="board"></div>
 </div>
+
+<div id="timelabel">00:00s</div>
 
 <div id="level-buttons"></div>
 
@@ -1010,20 +1015,24 @@
   }
 
   // SHARE DATA AND SHARE LINK
-  let timeSpentSeconds = 121;
-  const shareData = {
+  let timeSpentString = "0";
+  let shareData = {
     title: 'Gerrymandle #' + dayOfMap,
-    text: `🔸I beat map #${dayOfMap}` + ` in ${timeSpentSeconds}s. 🗺️ \n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`,
+    text: `🔸I beat map #${dayOfMap}` + ` in ${timeSpentString}. 🗺️ \n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`,
     //url: 'https://ssambender.github.io/gerrymandle/'
   }
   let sharelink = document.getElementById('share-line');
-  sharelink.addEventListener('click', async () => {
+  sharelink.addEventListener('click', async (event) => {
     event.preventDefault();
+
+    // Update the share text with the latest time string
+    shareData.text = `🔸I beat map #${dayOfMap} in ${timeSpentString}. 🗺️\n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`;
+
     try {
-      await navigator.share(shareData)
-      console.log('shared successfully')
+      await navigator.share(shareData);
+      console.log('shared successfully');
     } catch (err) {
-      console.log('error' + err)
+      console.log('error: ' + err);
     }
   }, false);
 
@@ -1133,6 +1142,19 @@
           if ((helpColorWin === "red" && redCount > blueCount) || (helpColorWin === "blue" && redCount < blueCount)) {
             console.log("LEVEL WIN!");
             console.log("Well Done!");
+            stopTimer();
+
+            const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+            const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+            document.getElementById('time-spent-label').innerText = `${minutes}:${seconds}s`;
+
+            // share data timer
+            if ( Math.floor(elapsedSeconds / 60) < 1 ) {
+              timeSpentString = `${String(elapsedSeconds % 60)}s`;
+            }
+            else {
+              timeSpentString = `${String(Math.floor(elapsedSeconds / 60))}m ${String(elapsedSeconds % 60)}s`;
+            }
 
             board.style.pointerEvents = "none";  // stop board edits after win
             //board.style.pointerEvents = "auto";  // to reenable events on board reset or something
@@ -1154,7 +1176,7 @@
             }, 1500);
           }
           else {
-            console.log("NOT QUITE! LEVEL LOSE!");
+            console.log("NOT QUITE!");
             // todo - show up "reset?" button
           }
         }
@@ -1277,8 +1299,8 @@
     document.getElementById('start-modal-container').style.display = 'none';
     document.getElementById('start-modal-container').style.opacity = '0';
 
-    //todo - START TIMER HERE
-    console.log("startTimer");
+    // START LEVEL
+    startTimer();
 
     gameInProgress = true;
     document.getElementById('team-select').disabled = true;
@@ -1346,6 +1368,31 @@
   setTimeout(() => {
     document.getElementById('start-game-button').style.transition = "color .15s, border .15s";
   }, 200);
+
+
+  // timer
+  let elapsedSeconds = 0;
+  let timerInterval = null;
+
+  function updateDisplay() {
+    const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+    const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+    document.getElementById('timelabel').textContent = `${minutes}:${seconds}s`;
+  }
+
+  function startTimer() {
+    if (timerInterval) return; // prevent multiple intervals
+    timerInterval = setInterval(() => {
+      elapsedSeconds++;
+      updateDisplay();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
 </script>
 </body>
 </html>
