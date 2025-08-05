@@ -18,6 +18,7 @@ ___
 - Drag and select puzzle board
 - Live update percent bar
 - Dark theme support
+- Play for either party color
 
 ---
 
