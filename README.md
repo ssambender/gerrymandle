@@ -19,6 +19,7 @@ ___
 - Live update percent bar
 - Dark theme support
 - Play for either party color
+- Share feature
 
 ---
 
@@ -28,7 +29,7 @@ ___
 - [ ] Daily randomization
 - [X] Share feature
 - [ ] Saved progress cache
-- [ ] Timer
+- [X] Timer
 
 _Feel free to submit pull requests!_
 
