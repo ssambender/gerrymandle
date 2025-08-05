@@ -116,14 +116,20 @@
       user-select: none;
       visibility: hidden;
       pointer-events: none;
+      font-weight: 800;
     }
 
-    #theme-select {
+    #theme-select, #team-select {
       color: var(--text);
       font-weight: bold;
       background: var(--bg);
       outline: none;
       border: solid 2px var(--gray-highlight);
+    }
+    #theme-select:disabled, #team-select:disabled {
+      pointer-events: none;
+      opacity: 0.5;
+      user-select: none;
     }
 
     .popup-modal-container {
@@ -166,7 +172,7 @@
       top: 12px;
       right: 24px;
       transform: rotate(45deg);
-      font-weight: 100;
+      font-weight: 700;
       font-size: 2em;
       cursor: pointer;
       color: var(--red-highlight);
@@ -184,9 +190,9 @@
     #start-game-button {
       background: none;
       outline: none;
-      color: var(--gray-highlight);
+      color: var(--gray-letter);
       border: solid 2px var(--gray-highlight);
-      transition: color .15s, border .15s;
+      /*transition: color .15s, border .15s;*/
       cursor: pointer;
       font-size: 1.5em;
       padding: 12px 24px 8px;
@@ -194,8 +200,8 @@
       margin-top: 24px;
     }
     #start-game-button:hover {
-      color: var(--gray-letter);
-      border: solid 2px var(--gray-letter);
+      color: var(--text);
+      border: solid 2px var(--text);
     }
 
     @media all and (orientation: portrait) {
@@ -294,7 +300,7 @@
       background: var(--bg);
       outline: none;
       border: solid 2px var(--gray-highlight);
-      color: var(--gray-highlight);
+      color: var(--gray-letter);
       cursor: pointer;
     }
     #level-buttons button:hover {
@@ -310,6 +316,7 @@
       text-align: center;
       font-size: 0.9rem;
       text-decoration: none;
+      font-weight: bold;
     }
     #madebysam:hover {
       text-decoration: underline;
@@ -389,26 +396,41 @@
     <div id="start-close" class="modal-close" style="display: none;">+</div>
     <div style="font-weight: bold; font-size: 1.5em;">How to Play :</div>
     <div style="font-weight: normal;">
-      • Draw districts by dragging/connecting adjacent star tiles<br>
-      • Each district must include exactly <b id="number-voters-today">#</b> stars<br>
-      • Majority of star colors in a district win that color the district<br>
-      • You win by totalling more Red districts than Blue<br>
-      • Click on a district to remove it and try again<br>
+      • Select a party color below - you're trying to rig the map in their favor<br>
+      • Create voting districts by dragging to connect <b>adjacent</b> star tiles<br>
+      • You can connect in any direction, but districts can't overlap or cross<br>
+      • Use gray tiles to bridge gaps - they help connect stars but don’t count towards the district's total<br>
+      • Each district must contain exactly the same number of stars (excluding gray)<br> <!-- (<b id="number-voters-today">#</b>) -->
+      • Win a district by making sure your party controls <b>more than half</b> the stars in it<br>
+      • Having an equal amount of red and blue stars result in a split district, which can help either side<br>
+      • Tap or click a district to remove it and try a different layout<br>
+      • Win the map by creating more districts for your party
     </div>
     <br>
     <div style="font-weight: bold; font-size: 1.5em;">What is Gerrymandering?</div>
-    <div style="font-weight: normal;">Gerrymandering is when politicians redraw voting district boundaries to unfairly boost their own party’s power,
-      often silencing the voices of larger communities. It flips democracy on its head—letting leaders choose their voters
-      instead of voters choosing their leaders. In the end, the will of the majority is replaced by the agenda of the minority.
+    <div style="font-weight: normal;">Gerrymandering is a political tactic where those in power redraw voting districts to keep themselves in control -
+      manipulating the rules to silence opposition and cling to power. It lets politicians pick their voters,
+      instead of voters picking their leaders. By slicing communities apart, they can rig outcomes even when they’re unpopular.
+      This game puts you in their shoes. Can you win <i>without winning fair?</i>
     </div>
     <br>
-    <div id="theme-toggle" style="z-index: 25;">
-      <label for="theme-select" style="color: var(--text);">Theme:</label>
-      <select id="theme-select">
-        <option value="system">System</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
+    <div style="display: flex; gap: 24px;">
+      <div id="team-toggle" style="z-index: 25;">
+        <label for="team-select" style="color: var(--text);">Team Color:</label>
+        <select id="team-select">
+          <option value="blue">Blue</option>
+          <option value="red">Red</option>
+        </select>
+      </div>
+
+      <div id="theme-toggle" style="z-index: 25;">
+        <label for="theme-select" style="color: var(--text);">Theme:</label>
+        <select id="theme-select">
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
     </div>
     <br>
     <i>( You can reopen this screen at any time with the <span style="font-weight: 900">?</span> at the top right )</i>
@@ -454,6 +476,9 @@
   const diffTime = today - startDate;
   let dayOfMap = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   document.getElementById('map-number-label').innerText = dayOfMap;
+
+  let gameInProgress = false;
+  let helpColorWin = 'Red';
 
   // board params
   const boardCols = 6;
@@ -602,11 +627,21 @@
   W ⬜
   */
   function getDisplayCharacter(char) {
-    switch (char) {
-      case "R": return "★";
-      case "B": return "✪";
-      case "O": return "✩";
-      default: return " ";
+    if (helpColorWin === "red") {
+      switch (char) {
+        case "R": return "★";
+        case "B": return "✪";
+        case "O": return "✩";
+        default: return " ";
+      }
+    }
+    else {
+      switch (char) {
+        case "R": return "✪";
+        case "B": return "★";
+        case "O": return "✩";
+        default: return " ";
+      }
     }
   }
 
@@ -642,12 +677,22 @@
         tile.innerText = getDisplayCharacter(letter); // show visual representation
         if (letter === "B") {
           //tile.style.color = styleVars.getPropertyValue('--blue-letter').trim();
-          tile.classList.add("tile-blue");
+          if (helpColorWin === "red") {
+            tile.classList.add("tile-blue");
+          }
+          else {
+            tile.classList.add("tile-red");
+          }
           tile.style.cursor = "pointer";
         }
         if (letter === "R") {
           //tile.style.color = styleVars.getPropertyValue('--red-letter').trim();
-          tile.classList.add("tile-red");
+          if (helpColorWin === "red") {
+            tile.classList.add("tile-red");
+          }
+          else {
+            tile.classList.add("tile-blue");
+          }
           tile.style.cursor = "pointer";
         }
         if (letter === "O") {
@@ -700,14 +745,19 @@
 
     //document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
     document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
-    document.getElementById('number-voters-today').innerText = currentVoteCount;
+    // document.getElementById('number-voters-today').innerText = currentVoteCount;
   }
   function updateVoteTotals() {
     const rTotal = levelData.filter(cell => cell === "R").length;
     const bTotal = levelData.filter(cell => cell === "B").length;
 
     const subInfo = document.getElementById('puzzle-subinfo');
-    subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help red win!`;
+    if (helpColorWin === "red") {
+      subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help ${helpColorWin} win!`;
+    }
+    else {
+      subInfo.innerHTML = `<b style="color: #e05353">${bTotal}</b> - <b style="color: #5988d1">${rTotal}</b>. Help ${helpColorWin} win!`;
+    }
   }
   setInfo();
   updateVoteTotals();
@@ -745,6 +795,7 @@
         segment.className = "district-segment";
         segment.style.background = seg.color;
         segment.style.width = "0";
+        // segment.title = desiredWidth;
         bar.appendChild(segment);
         requestAnimationFrame(() => {
           segment.style.width = desiredWidth;
@@ -811,12 +862,23 @@
 
     if (voteCount >= currentVoteCount) {
       // Apply matching color class
-      if (rCount > bCount) {
-        path.forEach(t => t.classList.add("selected-red"));
-      } else if (bCount > rCount) {
-        path.forEach(t => t.classList.add("selected-blue"));
-      } else {
-        path.forEach(t => t.classList.add("selected-purple"));
+      if (helpColorWin === "red") {
+        if (rCount > bCount) {
+          path.forEach(t => t.classList.add("selected-red"));
+        } else if (bCount > rCount) {
+          path.forEach(t => t.classList.add("selected-blue"));
+        } else {
+          path.forEach(t => t.classList.add("selected-purple"));
+        }
+      }
+      else {
+        if (bCount > rCount) {
+          path.forEach(t => t.classList.add("selected-red"));
+        } else if (rCount > bCount) {
+          path.forEach(t => t.classList.add("selected-blue"));
+        } else {
+          path.forEach(t => t.classList.add("selected-purple"));
+        }
       }
     } else {
       // Not full length apply default selected bg
@@ -1068,7 +1130,7 @@
 
         if (finalizedDistricts.length === currentDistrictCount) {
           console.log("all districts drawn");
-          if (redCount > blueCount) {
+          if ((helpColorWin === "red" && redCount > blueCount) || (helpColorWin === "blue" && redCount < blueCount)) {
             console.log("LEVEL WIN!");
             console.log("Well Done!");
 
@@ -1118,9 +1180,16 @@
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
 
-    if (rCount > bCount) return "selected-red";
-    else if (bCount > rCount) return "selected-blue";
-    else return "selected-purple";
+    if (helpColorWin === "red") {
+      if (rCount > bCount) return "selected-red";
+      else if (bCount > rCount) return "selected-blue";
+      else return "selected-purple";
+    }
+    else {
+      if (rCount > bCount) return "selected-blue";
+      else if (bCount > rCount) return "selected-red";
+      else return "selected-purple";
+    }
   }
 
   function finalizePathColor() {
@@ -1130,9 +1199,16 @@
     const rCount = votes.filter(v => v === "R").length;
     const bCount = votes.filter(v => v === "B").length;
 
-    if (rCount > bCount) return styleVars.getPropertyValue('--red-highlight').trim();
-    else if (bCount > rCount) return styleVars.getPropertyValue('--blue-highlight').trim();
-    else return styleVars.getPropertyValue('--purple-highlight').trim();
+    if (helpColorWin === "red") {
+      if (rCount > bCount) return styleVars.getPropertyValue('--red-highlight').trim();
+      else if (bCount > rCount) return styleVars.getPropertyValue('--blue-highlight').trim();
+      else return styleVars.getPropertyValue('--purple-highlight').trim();
+    }
+    else {
+      if (rCount > bCount) return styleVars.getPropertyValue('--blue-highlight').trim();
+      else if (bCount > rCount) return styleVars.getPropertyValue('--red-highlight').trim();
+      else return styleVars.getPropertyValue('--purple-highlight').trim();
+    }
   }
 
   window.addEventListener("resize", () => {
@@ -1202,6 +1278,19 @@
     document.getElementById('start-modal-container').style.opacity = '0';
 
     //todo - START TIMER HERE
+    console.log("startTimer");
+
+    gameInProgress = true;
+    document.getElementById('team-select').disabled = true;
+    if (document.getElementById('team-select').value === "red") {
+      helpColorWin = "red";
+    }
+    else {
+      helpColorWin = "blue";
+    }
+    updateVoteTotals();
+    loadLevel('LVL01');
+
     document.body.style.overflowY = 'visible';
     document.getElementById('start-game-button').style.display = 'none';
     document.getElementById('start-modal').style.padding = '48px';
@@ -1224,7 +1313,39 @@
   });
 
   // start with test level loaded by default
-  loadLevel('LVL01');
+  //loadLevel('LVL01');
+
+  // Load saved color theme
+  const teamSelect = document.getElementById('team-select');
+
+  const savedTeam = localStorage.getItem("team");
+  if (savedTeam) {
+    teamSelect.value = savedTeam;
+    if (savedTeam === "red") {
+      // set red team by default
+      console.log("loaded saved localstorage color red");
+    } else {
+      // set blue team by default
+      console.log("loaded saved localstorage color blue");
+    }
+  }
+  else {
+    console.log("no saved localstorage color");
+    console.log("setting default to blue");
+    localStorage.setItem("team", "blue");
+  }
+
+  // On teamselect change
+  teamSelect.addEventListener("change", () => {
+    const teamColor = teamSelect.value;
+    localStorage.setItem("team", teamColor);
+    console.log("set localStorage team color to " + teamColor);
+  });
+
+  // prevent flicker on pageload (when selected theme and system theme don't match)
+  setTimeout(() => {
+    document.getElementById('start-game-button').style.transition = "color .15s, border .15s";
+  }, 200);
 </script>
 </body>
 </html>
