@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gerrymandle</title>
   <link rel="icon" href="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/g-logo.png">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/g-logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zain:ital,wght@0,200;0,300;0,400;0,700;0,800;0,900;1,300;1,400&display=swap" rel="stylesheet">
@@ -235,6 +236,9 @@
         position: absolute;
         top: 0;
       }
+      #finish-modal {
+        position: relative;
+      }
     }
 
     #board-container {
@@ -242,6 +246,11 @@
       width: 460px;
       height: 620px;
       min-height: 620px;
+
+      /* center board within container on mobile */
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     #board {
@@ -251,6 +260,9 @@
       gap: 20px;
       position: absolute;
       z-index: 2;
+
+      /* stop accidental scroll on mobile */
+      touch-action: none;
     }
 
     .tile {
@@ -380,8 +392,9 @@
       }
 
       #line-canvas {
-        width: 360px !important;
-        height: 484px !important;
+        position: absolute;
+        top: 33px;
+        left: 25px;
       }
 
       #start-modal-container {
@@ -475,7 +488,7 @@
 <h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text);"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
 <div id="puzzle-districtbar" style="margin-top: 4px; width: 260px; height: 20px; background: var(--gray-highlight); display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
 <div id="board-container">
-  <canvas id="line-canvas" width="460" height="620"></canvas>
+  <canvas id="line-canvas"></canvas>
   <div id="board"></div>
 </div>
 
@@ -495,6 +508,7 @@
   let dayOfMap = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   document.getElementById('map-number-label').innerText = dayOfMap;
 
+  
   let gameInProgress = false;
   let helpColorWin = 'Red';
 
@@ -502,6 +516,8 @@
   const boardCols = 6;
   const boardRows = 8;
 
+
+  // LEVELS objects database
   const levels = {
     LVL00: ["16", "3",
       "B", "B", "B", "B", "B", "B",
@@ -615,8 +631,12 @@
     ]
   };
 
+
+  // convert css vars to non-variable codes
   const styleVars = getComputedStyle(document.documentElement);
 
+
+  // create one button for each level object in levels database - not permanent
   function generateLevelButtons() {
     const container = document.getElementById("level-buttons");
     for (const key in levels) {
@@ -628,22 +648,15 @@
   }
   generateLevelButtons();
 
+
   let currentDistrictCount = 0;
   let currentVoteCount = 0;
-
   let levelData = [];
   let finalizedDistricts = [];
 
+
   // CHARACTER SYMBOLS TO DISPLAY
-  /*
-  ★✩✰
-  ✪
-  ✦✧
-  ✯
-  R 🟥
-  B 🟦
-  W ⬜
-  */
+  // ★✯✩✰   ✪   ✦✧   R 🟥 B 🟦 W ⬜
   function getDisplayCharacter(char) {
     if (helpColorWin === "red") {
       switch (char) {
@@ -663,6 +676,8 @@
     }
   }
 
+
+  // LOAD TILES ON BOARD
   function loadLevel(levelName) {
     if (!levels[levelName]) return;
 
@@ -740,31 +755,39 @@
     resizeCanvas();
   }
 
+
+  // init and state vars
   const board = document.getElementById("board");
   const canvas = document.getElementById("line-canvas");
   const ctx = canvas.getContext("2d");
   let isMouseDown = false;
   let path = [];
 
+
+  // redraw canvas
   function resizeCanvas() {
     const container = document.getElementById("board-container");
-    canvas.width = container.offsetWidth;
-    canvas.height = container.offsetHeight;
+
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
     drawLines(); // redraw after resize
   }
   resizeCanvas();
 
-  function setInfo() {
-    const today = new Date();
-    const mm = today.getMonth() + 1;
-    const dd = today.getDate();
-    const yy = String(today.getFullYear()).slice(-2);
-    const formattedDate = `${mm}/${dd}/${yy}`;
 
-    //document.getElementById('puzzle-info').innerText = `${formattedDate} - ${currentDistrictCount} districts of ${currentVoteCount}`;
+  // update the info - title
+  function setInfo() {
     document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
-    // document.getElementById('number-voters-today').innerText = currentVoteCount;
   }
+
+  // update the subinfo line - blue & red star count
   function updateVoteTotals() {
     const rTotal = levelData.filter(cell => cell === "R").length;
     const bTotal = levelData.filter(cell => cell === "B").length;
@@ -780,6 +803,8 @@
   setInfo();
   updateVoteTotals();
 
+
+  // update the district percent indicator bar
   function updateDistrictBar() {
     const bar = document.getElementById("puzzle-districtbar");
 
@@ -836,6 +861,7 @@
   }
 
 
+  // helper func for line drawing
   function getTileCenter(tile) {
     const rect = tile.getBoundingClientRect();
     const parentRect = board.getBoundingClientRect();
@@ -844,6 +870,7 @@
       y: rect.top - parentRect.top + rect.height / 2
     };
   }
+
 
   // Draw lines connecting tiles for given path with specified color and line width
   function drawPathLines(pathTiles, color, lineWidth = 16) {
@@ -861,6 +888,8 @@
     ctx.stroke();
   }
 
+
+  // update connecting line colors
   function updateCurrentPathColors() {
     if (path.length === 0) return;
 
@@ -904,6 +933,7 @@
     }
   }
 
+
   // draws all finalized districts lines plus current drawing path line
   function drawLines() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -932,6 +962,7 @@
 
   }
 
+
   // get stroke color string for given tile class
   function getStrokeColorForClass(colorClass) {
     switch (colorClass) {
@@ -942,6 +973,8 @@
     }
   }
 
+
+  // check if tiles are adjacent on grid
   function areAdjacent(tile1, tile2) {
     const r1 = +tile1.dataset.row;
     const c1 = +tile1.dataset.col;
@@ -982,6 +1015,9 @@
   }
 
 
+
+  // REMOVE AN EXISTING DISTRICT
+  // clear the path
   function clearPath() {
     path.forEach(t => {
       if (!isTileFinalized(t)) {
@@ -992,10 +1028,12 @@
     drawLines();
   }
 
+  // check tiles
   function isTileFinalized(tile) {
     return finalizedDistricts.some(district => district.tiles.includes(tile));
   }
 
+  // get tile and connected tiles to remove
   function removeDistrictContainingTile(tile) {
     for (let i = 0; i < finalizedDistricts.length; i++) {
       const district = finalizedDistricts[i];
@@ -1027,6 +1065,8 @@
     }
   }
 
+
+
   // SHARE DATA AND SHARE LINK
   let timeSpentString = "0";
   let shareData = {
@@ -1049,7 +1089,10 @@
     }
   }, false);
 
+
+
   // EVENT LISTENERS
+  // mouse down
   board.addEventListener("mousedown", (e) => {
     if (!e.target.classList.contains("tile")) return;
     if (isTileFinalized(e.target)) return;
@@ -1067,7 +1110,30 @@
       e.target.classList.remove("pop");
     }, { once: true });
   });
+  // touch down
+  board.addEventListener("touchstart", (e) => {
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target || !target.classList.contains("tile")) return;
+    if (isTileFinalized(target)) return;
+    if (target.dataset.value.trim() === "") return;
 
+    clearPath();
+    isMouseDown = true;
+
+    path.push(target);
+    updateCurrentPathColors();
+    drawLines();
+
+    target.classList.add("pop");
+    target.addEventListener("animationend", () => {
+      target.classList.remove("pop");
+    }, { once: true });
+
+    e.preventDefault();
+  }, { passive: false });
+
+  // mouse drag
   board.addEventListener("mouseover", (e) => {
     if (!isMouseDown || !e.target.classList.contains("tile")) return;
     if (isTileFinalized(e.target)) return;
@@ -1107,7 +1173,47 @@
       }, { once: true });
     }
   });
+  // touch drag
+  board.addEventListener("touchmove", (e) => {
+    if (!isMouseDown) return;
 
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target || !target.classList.contains("tile")) return;
+    if (isTileFinalized(target)) return;
+    if (target.dataset.value.trim() === "") return;
+
+    const last = path[path.length - 1];
+    const secondLast = path[path.length - 2];
+
+    if (secondLast === target) {
+      const removed = path.pop();
+      removed.classList.remove("selected", "selected-red", "selected-blue", "selected-purple");
+      updateCurrentPathColors();
+      drawLines();
+      return;
+    }
+
+    const voteCount = path.filter(t => ["R", "B"].includes(t.dataset.value)).length;
+    const atLimit = voteCount >= currentVoteCount;
+
+    if (atLimit) return;
+
+    if (!path.includes(target) && areAdjacent(last, target)) {
+      path.push(target);
+      updateCurrentPathColors();
+      drawLines();
+
+      target.classList.add("pop");
+      target.addEventListener("animationend", () => {
+        target.classList.remove("pop");
+      }, { once: true });
+    }
+
+    e.preventDefault();
+  }, { passive: false });
+
+  // mouse up
   window.addEventListener("mouseup", () => {
     if (path.length > 0) {
       const word = path.map(t => t.dataset.value).join("");
@@ -1202,12 +1308,94 @@
     }
     isMouseDown = false;
   });
+  // touch up - todo: possibly change board to window for touchend below
+  board.addEventListener("touchend", (e) => {
+    if (path.length === 0) return;
 
+    e.preventDefault();
+    isMouseDown = false;
 
+    const voteTiles = path.filter(t => ["R", "B"].includes(t.dataset.value.trim()));
+    const voteCount = voteTiles.length;
+
+    if (voteCount === currentVoteCount && path.length >= voteCount) {
+      const colorClass = getFinalColorClass();
+
+      finalizedDistricts.push({
+        tiles: [...path],
+        colorClass
+      });
+
+      path.forEach(t => {
+        t.classList.remove("selected");
+        t.classList.add(colorClass);
+      });
+
+      updateDistrictBar();
+
+      // Win check logic
+      const redCount = finalizedDistricts.filter(d => d.colorClass === "selected-red").length;
+      const blueCount = finalizedDistricts.filter(d => d.colorClass === "selected-blue").length;
+
+      if (finalizedDistricts.length === currentDistrictCount) {
+        if ((helpColorWin === "red" && redCount > blueCount) ||
+                (helpColorWin === "blue" && blueCount > redCount)) {
+          console.log("LEVEL WIN!");
+          stopTimer();
+
+          const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+          const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+          document.getElementById('time-spent-label').innerText = `${minutes}:${seconds}s`;
+
+          // share data timer
+          if ( Math.floor(elapsedSeconds / 60) < 1 ) {
+            timeSpentString = `${String(elapsedSeconds % 60)}s`;
+          }
+          else {
+            timeSpentString = `${String(Math.floor(elapsedSeconds / 60))}m ${String(elapsedSeconds % 60)}s`;
+          }
+
+          board.style.pointerEvents = "none";  // stop board edits after win
+
+          document.querySelectorAll('.tile').forEach(tile => {
+            const row = parseInt(tile.dataset.row);
+            const col = parseInt(tile.dataset.col);
+            const delay = (row * boardCols + col) * 15;
+            setTimeout(() => {
+              tile.classList.add('fade-text');
+            }, delay);
+          });
+
+          document.getElementById('finish-modal-container').style.display = 'flex';
+          document.getElementById('finish-modal-container').style.opacity = '0';
+          setTimeout(() => {
+            document.getElementById('finish-modal-container').style.display = 'flex';
+            document.getElementById('finish-modal-container').style.opacity = '1';
+          }, 1500);
+        }
+      }
+
+      path = [];
+      drawLines();
+    } else {
+      clearPath();
+    }
+  }, { passive: false });
+
+  // detect mouse leave
   window.addEventListener("mouseleave", () => {
     isMouseDown = false;
   });
 
+  // detect window resize
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    drawLines();
+  });
+
+
+
+  // FINALIZE DISTRICT COORS
   function getFinalColorClass() {
     const votes = path
             .map(t => t.dataset.value)
@@ -1226,7 +1414,6 @@
       else return "selected-purple";
     }
   }
-
   function finalizePathColor() {
     const votes = path
             .map(t => t.dataset.value)
@@ -1246,18 +1433,74 @@
     }
   }
 
-  window.addEventListener("resize", () => {
-    resizeCanvas();
-    drawLines();
+
+
+  // START AND FINISH MODALS
+  // close win modal
+  document.getElementById('finish-close').addEventListener("click", () => {
+    document.getElementById('finish-modal-container').style.display = 'none';
+    document.getElementById('finish-modal-container').style.opacity = '0';
   });
 
+  // start modal - BEGIN button pressed - begin game start game
+  document.getElementById('start-game-button').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'none';
+    document.getElementById('start-modal-container').style.opacity = '0';
+
+    // START LEVEL
+    startTimer();
+
+    document.body.scrollTop = document.documentElement.scrollTop = 0;
+
+    gameInProgress = true;
+    document.getElementById('team-select').disabled = true;
+    if (document.getElementById('team-select').value === "red") {
+      helpColorWin = "red";
+    }
+    else {
+      helpColorWin = "blue";
+    }
+    updateVoteTotals();
+    loadLevel('LVL01');
+
+    document.body.style.overflowY = 'visible';
+    document.getElementById('start-game-button').style.display = 'none';
+    document.getElementById('start-modal').style.padding = '48px';
+    document.getElementById('start-close').style.display = 'flex';
+
+    document.getElementById('help-button').style.visibility = 'visible';
+    document.getElementById('help-button').style.pointerEvents = 'all';
+  })
+
+  // close help modal
+  document.getElementById('start-close').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'none';
+    document.getElementById('start-modal-container').style.opacity = '0';
+  });
+
+  // open help modal
+  document.getElementById('help-button').addEventListener("click", () => {
+    document.getElementById('start-modal-container').style.display = 'flex';
+    document.getElementById('start-modal-container').style.opacity = '1';
+    document.getElementById('start-modal-container').style.background = 'var(--bg-opacity)';
+  });
+
+  // prevent flicker on pageload (when selected theme and system theme don't match)
+  setTimeout(() => {
+    document.getElementById('start-game-button').style.transition = "color .15s, border .15s";
+  }, 200);
+
+
+
+  // LIGHT/DARK THEME
+  const themeSelect = document.getElementById("theme-select");
+
+  // auto check theme preference
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
     console.log("Color scheme changed:", e.matches ? "dark" : "light");
     drawLines(); // Redraw canvas lines with updated CSS variable colors
     updateDistrictBar();
   });
-
-  const themeSelect = document.getElementById("theme-select");
 
   // Load saved preference
   const savedTheme = localStorage.getItem("theme");
@@ -1301,58 +1544,9 @@
     }
   });
 
-  // close win modal
-  document.getElementById('finish-close').addEventListener("click", () => {
-    document.getElementById('finish-modal-container').style.display = 'none';
-    document.getElementById('finish-modal-container').style.opacity = '0';
-  });
 
-  // close start modal
-  document.getElementById('start-game-button').addEventListener("click", () => {
-    document.getElementById('start-modal-container').style.display = 'none';
-    document.getElementById('start-modal-container').style.opacity = '0';
 
-    // START LEVEL
-    startTimer();
-
-    document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-    gameInProgress = true;
-    document.getElementById('team-select').disabled = true;
-    if (document.getElementById('team-select').value === "red") {
-      helpColorWin = "red";
-    }
-    else {
-      helpColorWin = "blue";
-    }
-    updateVoteTotals();
-    loadLevel('LVL01');
-
-    document.body.style.overflowY = 'visible';
-    document.getElementById('start-game-button').style.display = 'none';
-    document.getElementById('start-modal').style.padding = '48px';
-    document.getElementById('start-close').style.display = 'flex';
-
-    document.getElementById('help-button').style.visibility = 'visible';
-    document.getElementById('help-button').style.pointerEvents = 'all';
-  })
-
-  document.getElementById('start-close').addEventListener("click", () => {
-    document.getElementById('start-modal-container').style.display = 'none';
-    document.getElementById('start-modal-container').style.opacity = '0';
-  });
-
-  // open help modal
-  document.getElementById('help-button').addEventListener("click", () => {
-    document.getElementById('start-modal-container').style.display = 'flex';
-    document.getElementById('start-modal-container').style.opacity = '1';
-    document.getElementById('start-modal-container').style.background = 'var(--bg-opacity)';
-  });
-
-  // start with test level loaded by default
-  //loadLevel('LVL01');
-
-  // Load saved color theme
+  // LOAD RED/BLUE THEME
   const teamSelect = document.getElementById('team-select');
 
   const savedTeam = localStorage.getItem("team");
@@ -1372,20 +1566,16 @@
     localStorage.setItem("team", "blue");
   }
 
-  // On teamselect change
+  // On team select change
   teamSelect.addEventListener("change", () => {
     const teamColor = teamSelect.value;
     localStorage.setItem("team", teamColor);
     console.log("set localStorage team color to " + teamColor);
   });
 
-  // prevent flicker on pageload (when selected theme and system theme don't match)
-  setTimeout(() => {
-    document.getElementById('start-game-button').style.transition = "color .15s, border .15s";
-  }, 200);
 
 
-  // timer
+  // TIMER
   let elapsedSeconds = 0;
   let timerInterval = null;
 
@@ -1407,7 +1597,6 @@
     clearInterval(timerInterval);
     timerInterval = null;
   }
-
 </script>
 </body>
 </html>
