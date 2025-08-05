@@ -251,8 +251,8 @@
       color: var(--text);
       /*cursor: pointer;*/
       user-select: none;
-      line-height: 1;  /* remove this line if using text not symbols in tiles */
-      vertical-align: middle;
+      /*line-height: 1;*/
+      /*vertical-align: middle;*/
     }
 
     /* Highlight classes */
@@ -436,7 +436,7 @@
       </div>
     </div>
     <br>
-    <i>( You can reopen this screen at any time with the <span style="font-weight: 900">?</span> at the top right )</i>
+    <i>( You can reopen this screen at any time with the <span style="font-weight: 900; padding: 0 2px">?</span> at the top right )</i>
 
     <div style="display: flex; justify-content: center;">
       <button id="start-game-button">BEGIN</button>
@@ -758,10 +758,10 @@
 
     const subInfo = document.getElementById('puzzle-subinfo');
     if (helpColorWin === "red") {
-      subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help ${helpColorWin} win!`;
+      subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
     }
     else {
-      subInfo.innerHTML = `<b style="color: #e05353">${bTotal}</b> - <b style="color: #5988d1">${rTotal}</b>. Help ${helpColorWin} win!`;
+      subInfo.innerHTML = `<b style="color: #e05353">${bTotal}</b> - <b style="color: #5988d1">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
     }
   }
   setInfo();
