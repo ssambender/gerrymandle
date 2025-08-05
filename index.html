@@ -106,14 +106,15 @@
 
       margin-top: 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       line-height: 1;
       padding: 14px 0 8px;
     }
 
     #help-button {
-      margin-right: 48px;
+      position: absolute;
+      right: 48px;
       cursor: pointer;
       user-select: none;
       visibility: hidden;
@@ -212,6 +213,9 @@
       }
       #start-modal-container {
         z-index: 24;
+      }
+      #help-button {
+        right: 24px;
       }
     }
 
@@ -375,6 +379,9 @@
         font-size: 1.1em;
         box-sizing: border-box;
       }
+      #help-button {
+        right: 12px;
+      }
     }
   </style>
 </head>
@@ -425,7 +432,6 @@
 </div>
 
 <h1 id="heading">
-  <div style="visibility: hidden"></div>
   <div><span style="color: var(--red-letter)">★★★</span> Gerrymandle <span style="color: var(--blue-letter)">★★★</span></div>
   <div id="help-button">?</div>
 </h1>
