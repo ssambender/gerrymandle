@@ -230,6 +230,11 @@
       #help-button {
         right: 24px;
       }
+
+      .popup-modal {
+        position: absolute;
+        top: 24px;
+      }
     }
 
     #board-container {
@@ -356,9 +361,6 @@
     }
 
     @media (max-width: 619px) {
-      body {
-        overflow-y: hidden;
-      }
       #board-container {
         width: 360px;
         height: 484px;
@@ -1312,6 +1314,8 @@
 
     // START LEVEL
     startTimer();
+
+    document.body.scrollTop = document.documentElement.scrollTop = 0;
 
     gameInProgress = true;
     document.getElementById('team-select').disabled = true;
