@@ -25,7 +25,7 @@ ___
 
 
 ### Planned features:
-- [ ] Mobile support
+- [X] Mobile support
 - [ ] Daily randomization
 - [X] Share feature
 - [ ] Saved progress cache
