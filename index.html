@@ -186,12 +186,12 @@
       color: var(--red-letter);
     }
 
-    #leveleditor-line {
+    .leveleditor-line {
       text-decoration: underline;
       color: var(--blue-highlight);
       transition: color .15s;
     }
-    #leveleditor-line:hover {
+    .leveleditor-line:hover {
       cursor: pointer;
       color: var(--blue-letter);
     }
@@ -322,12 +322,13 @@
     }
 
     #level-buttons {
-      display: flex;
-      flex-wrap: wrap;
+      display: none;
+      flex-wrap: nowrap;
       gap: 12px;
-      margin-top: 12px;
-      justify-content: center;
-      align-items: center;
+      margin-top: 4px;
+
+      padding-bottom: 4px;
+      overflow-x: scroll;
     }
     #level-buttons button {
       background: var(--bg);
@@ -464,7 +465,11 @@
       </div>
     </div>
     <br>
-    <a id="leveleditor-line" href="https://ssambender.github.io/GM-GEN/" target="_blank">Click here to open level designer page in new tab</a><br>
+    <div style="display: flex; gap: 24px">
+      <a id="show-other-levels" class="leveleditor-line">Show other premade levels</a>
+      <a class="leveleditor-line" href="https://ssambender.github.io/GM-GEN/" target="_blank">Try custom level editor</a>
+    </div>
+    <div id="level-buttons"></div>
     <i>( You can reopen this screen at any time with the <span style="font-weight: 900; padding: 0 2px">?</span> at the top right )</i>
 
     <div style="display: flex; justify-content: center;">
@@ -477,7 +482,7 @@
   <div id="finish-modal" class="popup-modal">
     <div id="finish-close" class="modal-close">+</div>
     <div id="win-message" style="font-weight: bold; font-size: 1.5em; text-transform: uppercase;">Well Done!</div>
-    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED MAP #<span id="map-number-label">0</span> IN <span id="time-spent-label">##:##s</span></div>
+    <div style="font-weight: normal; font-size: 1em; margin: 16px 0; color: var(--text);">FINISHED <span id="map-number-label">0</span> IN <span id="time-spent-label">##:##s</span></div>
     <div id="share-line">Share your time with friends.</div>
   </div>
 </div>
@@ -497,8 +502,6 @@
 
 <div id="timelabel">00:00s</div>
 
-<div id="level-buttons"></div>
-
 <a id="madebysam" href="https://sambender.net">
   Made with ❤️ by Sam Bender
 </a>
@@ -509,10 +512,18 @@
   const today = new Date();
   const diffTime = today - startDate;
   let dayOfMap = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  document.getElementById('map-number-label').innerText = dayOfMap;
+  //document.getElementById('map-number-label').innerText = dayOfMap;
+
+
+  // Daily local caches, reset each day:
+  let startedDaily = false;  // if true, don't show start modal on page load
+  let finishedDaily = false;  // if true, load finished board save and show finish modal instead of start modal on load
+
+  let isPlayingDaily = false;
 
 
   // VAR TO HOLD THE LEVEL
+  // Fallback level incase todays level gen doesn't work
   let todaysLevel = ["6", "5",
     " ", "R", "B", "O", " ", "O",
     "B", "R", "O", " ", " ", " ",
@@ -522,8 +533,6 @@
     "B", "B", "R", "B", "R", "O",
     "O", "B", "R", "B", "B", "B",
     " ", "R", " ", " ", "R", "B"];
-  // todo - set todays level to the random gen level
-  let currentLevel = todaysLevel;
   let selectedLevel = todaysLevel;
 
 
@@ -541,17 +550,6 @@
 
   // LEVELS objects database
   const levels = {
-    LVL00: ["3",
-      "8",
-      "B", "R", "R", " ", "R", "B",
-      "B", " ", " ", "R", "R", "B",
-      "B", " ", " ", "B", "O", "R",
-      "R", "R", "R", "R", " ", " ",
-      " ", " ", " ", "O", " ", "O",
-      " ", "O", "O", " ", " ", " ",
-      " ", "B", "B", "B", "B", "B",
-      "O", "R", " ", " ", "B", "B"
-    ],
     LVL01: ["5", "3",
       " ", " ", " ", " ", " ", " ",
       " ", " ", " ", "O", "R", "R",
@@ -681,7 +679,37 @@
       " ", "B", "R", "B", "R", "R",
       "B", "R", "O", "R", "B", "B",
       "R", "R", "B", "R", " ", " "
-    ]
+    ],
+    JELLYFISH: ["3", "3",
+    " ", " ", "B", "O", " ", " ",
+    " ", "O", "O", " ", "O", "B",
+    "O", "R", " ", "O", " ", "O",
+    "O", " ", " ", " ", "O", "O",
+    "B", "R", " ", " ", "O", "B",
+    " ", " ", "O", " ", "O", " ",
+    " ", " ", "O", " ", "O", " ",
+    "R", "B", " ", " ", " ", "R"
+    ],
+    BRIDGE: ["5", "5",
+      " ", "B", "B", "R", "B", "R",
+      "R", "R", "R", " ", " ", " ",
+      "B", "O", " ", " ", "R", "O",
+      "R", "O", " ", "B", "B", " ",
+      "R", "B", "B", "B", "R", "O",
+      "R", " ", " ", "B", " ", "O",
+      "B", " ", " ", "B", "B", "B",
+      " ", "O", "O", "O", " ", "R"
+    ],
+    SAMO: ["4", "7",
+      "B", "R", "B", " ", " ", " ",
+      " ", " ", "R", "B", " ", " ",
+      "O", " ", " ", "R", " ", " ",
+      "R", "R", "B", "R", " ", " ",
+      "R", "O", "B", "B", "B", "O",
+      "O", "R", "B", "R", "B", "R",
+      " ", "B", "R", "R", "B", "B",
+      " ", " ", "B", "R", "B", "B"
+    ],
   };
 
 
@@ -697,6 +725,7 @@
       btn.innerText = key;
       btn.onclick = () => {
         selectedLevel = levels[key];  // so the "start" button uses this if clicked later
+        starterFunc();
         loadLevel(key);
       };
       container.appendChild(btn);
@@ -813,6 +842,7 @@
 
     //setInfo();
     document.getElementById('puzzle-info').innerText = `Challenge Map ${levelName}`;
+    document.getElementById('map-number-label').innerText = `CHALLENGE MAP ${levelName.toUpperCase()}`;  //  #${dayOfMap}
     updateVoteTotals();
     updateDistrictBar();
     resizeCanvas();
@@ -888,6 +918,155 @@
 
 
 
+  // todo - if NOT startedDaily, generate:
+  // CREATE LEVEL FROM SEED
+  function generateRandomMapFromSeed(seedText) {
+    const rows = 8, cols = 6;
+    const combos = [ [5,6], [6,5], [7,3], [4,7], [3,8], [6,4], [5,5], [5,3], [5,4] ];
+
+    function sha256(text) {
+      const utf8 = new TextEncoder().encode(text);
+      return crypto.subtle.digest("SHA-256", utf8).then(buf => {
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      });
+    }
+
+    function mulberry32(seed) {
+      return function () {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function numberToSuffix(n) {
+      let s = '';
+      while (n >= 0) {
+        s = String.fromCharCode((n % 26) + 97) + s;
+        n = Math.floor(n / 26) - 1;
+      }
+      return s;
+    }
+
+    function shuffle(array, rand) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function getNeighbors(r, c, used) {
+      return [[r-1,c], [r+1,c], [r,c-1], [r,c+1]].filter(
+              ([nr,nc]) => nr >= 0 && nr < rows && nc >= 0 && nc < cols && !used[nr][nc]
+      );
+    }
+
+    function generateWinnableLevel(districtCount, voteCount, rand) {
+      const grid = Array.from({ length: rows }, () => Array(cols).fill(" "));
+      const used = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const districts = [];
+
+      function placeDistrict() {
+        let attempts = 0;
+        while (attempts++ < 3000) {
+          const startR = Math.floor(rand() * rows);
+          const startC = Math.floor(rand() * cols);
+          if (used[startR][startC]) continue;
+          const queue = [[[startR, startC]]];
+          while (queue.length) {
+            const path = queue.shift();
+            if (path.length >= voteCount) {
+              const finalPath = path.slice(0, voteCount);
+              finalPath.forEach(([r, c]) => used[r][c] = true);
+              const oTiles = [];
+              for (let i = voteCount; i < Math.min(path.length, voteCount + 2); i++) {
+                const [r, c] = path[i];
+                if (!used[r][c]) {
+                  used[r][c] = true;
+                  oTiles.push([r, c]);
+                }
+              }
+              districts.push({ path: finalPath, oTiles, votes: [] });
+              return true;
+            }
+            const [lr, lc] = path[path.length - 1];
+            const neighbors = getNeighbors(lr, lc, used).filter(
+                    ([nr, nc]) => !path.some(([pr, pc]) => pr === nr && pc === nc)
+            );
+            shuffle(neighbors, rand);
+            neighbors.forEach(n => queue.push([...path, n]));
+          }
+        }
+        return false;
+      }
+
+      for (let i = 0; i < districtCount; i++) {
+        if (!placeDistrict()) return null;
+      }
+
+      let redWins = 0, blueWins = 0, redTiles = 0, blueTiles = 0;
+
+      for (const dist of districts) {
+        let r = 0, b = 0;
+        const votes = [];
+        for (let i = 0; i < dist.path.length; i++) {
+          const vote = rand() < 0.48 ? 'R' : 'B';
+          vote === 'R' ? r++ : b++;
+          votes.push(vote);
+        }
+        if (r <= b) {
+          for (let i = 0; i < votes.length; i++) {
+            if (votes[i] === 'B') {
+              votes[i] = 'R';
+              r++; b--;
+              break;
+            }
+          }
+        }
+        dist.votes = votes;
+        redTiles += r;
+        blueTiles += b;
+        if (r > b) redWins++;
+        else if (b > r) blueWins++;
+      }
+
+      if (redWins <= blueWins || redTiles >= blueTiles) return null;
+
+      for (const dist of districts) {
+        dist.path.forEach(([r, c], i) => grid[r][c] = dist.votes[i]);
+        dist.oTiles.forEach(([r, c]) => grid[r][c] = 'O');
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] === ' ') grid[r][c] = rand() < 0.3 ? 'O' : ' ';
+        }
+      }
+
+      return [districtCount.toString(), voteCount.toString(), ...grid.flat()];
+    }
+
+    return new Promise(async (resolve) => {
+      let attempt = 0;
+      while (true) {
+        const suffix = attempt === 0 ? '' : numberToSuffix(attempt - 1);
+        const fullSeed = seedText + suffix;
+        const hash = await sha256(fullSeed);
+        const seed = parseInt(hash.slice(0, 8), 16);
+        const rand = mulberry32(seed);
+        const comboIndex = parseInt(hash.slice(8, 10), 16) % combos.length;
+        const [groupCount, groupSize] = combos[comboIndex];
+
+        const level = generateWinnableLevel(groupCount, groupSize, rand);
+        if (level) return resolve(level);
+        attempt++;
+      }
+    });
+  }
+
+
+
   // init and state vars
   const board = document.getElementById("board");
   const canvas = document.getElementById("line-canvas");
@@ -917,6 +1096,7 @@
   // update the info - title
   function setInfo() {
     document.getElementById('puzzle-info').innerText = `Daily Map ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;  //  #${dayOfMap}
+    document.getElementById('map-number-label').innerText = `DAILY MAP ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;  //  #${dayOfMap}
   }
 
   // update the subinfo line - blue & red star count
@@ -1211,6 +1391,7 @@
     event.preventDefault();
 
     // Update the share text with the latest time string
+    // TODO - update shareData text to say either "I beat daily map MM/DD/YY", "I beat a custom map" (with the link updated to include the query param), or "I beat map LVL00" (or name) if premade map
     shareData.text = `🔸I beat map #${dayOfMap} in ${timeSpentString}. 🗺️\n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`;
 
     try {
@@ -1395,6 +1576,11 @@
             console.log("Well Done!");
             stopTimer();
 
+            if (isPlayingDaily) {
+              finishedDaily = true;
+              console.log("FINISHED DAILY");
+            }
+
             const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
             const seconds = String(elapsedSeconds % 60).padStart(2, '0');
             document.getElementById('time-spent-label').innerText = `${minutes}:${seconds}s`;
@@ -1428,7 +1614,6 @@
           }
           else {
             console.log("NOT QUITE!");
-            // todo - show up "reset?" button
           }
         }
 
@@ -1440,7 +1625,7 @@
     }
     isMouseDown = false;
   });
-  // touch up - todo: possibly change board to window for touchend below
+  // touch up - if error: change board to window for touchend below
   board.addEventListener("touchend", (e) => {
     if (path.length === 0) return;
 
@@ -1574,8 +1759,7 @@
     document.getElementById('finish-modal-container').style.opacity = '0';
   });
 
-  // start modal - BEGIN button pressed - begin game start game
-  document.getElementById('start-game-button').addEventListener("click", () => {
+  function starterFunc() {
     document.getElementById('start-modal-container').style.display = 'none';
     document.getElementById('start-modal-container').style.opacity = '0';
 
@@ -1603,6 +1787,13 @@
 
     document.getElementById('help-button').style.visibility = 'visible';
     document.getElementById('help-button').style.pointerEvents = 'all';
+  }
+  // start modal - BEGIN button pressed - begin game start game
+  document.getElementById('start-game-button').addEventListener("click", () => {
+    console.log("STARTED DAILY");
+    startedDaily = true;
+    isPlayingDaily = true;
+    starterFunc();
   })
 
   // close help modal
@@ -1749,12 +1940,40 @@
       // Set selected level to this parsed one
       selectedLevel = finalArray;
       document.getElementById('puzzle-info').innerText = `Custom Map`;  //  #${dayOfMap}
+      document.getElementById('map-number-label').innerText = `CUSTOM MAP`;  //  #${dayOfMap}
 
       // Remove the param from the URL bar
       history.replaceState(null, '', window.location.pathname);
     } else {
       console.log("No level param. Using today's level.");
+
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const year = String(today.getFullYear()).slice(-2);
+      const formatted = `${month}${day}${year}`;
+
+      generateRandomMapFromSeed(formatted).then(level => {
+        todaysLevel = level;
+        selectedLevel = todaysLevel;
+        console.log("loaded level for date/seed: " + formatted);
+      });
     }
+  });
+
+
+
+  // SHOW OTHER LEVELS IN MODAL
+  let showingOtherLevels = false;
+  document.getElementById('show-other-levels').addEventListener("click", () => {
+    if (!showingOtherLevels) {
+      document.getElementById('level-buttons').style.display = 'flex';
+      document.getElementById('show-other-levels').innerText = 'Hide other premade levels';
+    }
+    else {
+      document.getElementById('level-buttons').style.display = 'none';
+      document.getElementById('show-other-levels').innerText = 'Show other premade levels';
+    }
+    showingOtherLevels = !showingOtherLevels;
   });
 
 
