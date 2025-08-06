@@ -109,6 +109,9 @@
       line-height: 1;
       padding: 14px 0 8px;
     }
+    #title-click {
+      cursor: pointer;
+    }
 
     #help-button {
       position: absolute;
@@ -480,12 +483,12 @@
 </div>
 
 <h1 id="heading">
-  <div><span style="color: var(--red-letter)">★★★</span> Gerrymandle <span style="color: var(--blue-letter)">★★★</span></div>
+  <div><span style="color: var(--red-letter)">★★★</span> <span id="title-click" title="Reload page.">Gerrymandle</span> <span style="color: var(--blue-letter)">★★★</span></div>
   <div id="help-button">?</div>
 </h1>
 
-<h2 id="puzzle-info" style="margin-bottom: 0; color: var(--text);">? districts of ?</h2>
-<h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text);"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
+<h2 id="puzzle-info" style="margin-bottom: 0; color: var(--text);">Daily Map</h2>
+<h3 id="puzzle-subinfo" style="margin-top: 0; margin-bottom: 0; font-weight: normal; color: var(--text); text-align: center;"><b style="color: var(--blue-letter)">17</b> - <b style="color: var(--red-letter)">13</b>. Help red win!</h3>
 <div id="puzzle-districtbar" style="margin-top: 4px; width: 260px; height: 20px; background: var(--gray-highlight); display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 10px;"></div>
 <div id="board-container">
   <canvas id="line-canvas"></canvas>
@@ -509,6 +512,25 @@
   document.getElementById('map-number-label').innerText = dayOfMap;
 
 
+  // VAR TO HOLD THE LEVEL
+  let todaysLevel = ["6", "5",
+    " ", "R", "B", "O", " ", "O",
+    "B", "R", "O", " ", " ", " ",
+    "R", "R", "R", "B", " ", " ",
+    " ", "B", "R", "R", "B", "R",
+    " ", "B", "B", " ", "B", "R",
+    "B", "B", "R", "B", "R", "O",
+    "O", "B", "R", "B", "B", "B",
+    " ", "R", " ", " ", "R", "B"];
+  // todo - set todays level to the random gen level
+  let currentLevel = todaysLevel;
+  let selectedLevel = todaysLevel;
+
+
+  // INIT timer
+  let elapsedSeconds = 0;
+  let timerInterval = null;
+
   let gameInProgress = false;
   let helpColorWin = 'Red';
 
@@ -519,15 +541,16 @@
 
   // LEVELS objects database
   const levels = {
-    LVL00: ["16", "3",
-      "B", "B", "B", "B", "B", "B",
-      "R", "R", "B", "R", "R", "B",
-      "R", "R", "B", "R", "R", "B",
-      "B", "B", "B", "B", "B", "B",
-      "R", "R", "B", "R", "R", "B",
-      "R", "R", "B", "R", "R", "B",
-      "R", "R", "B", "R", "R", "B",
-      "B", "B", "B", "B", "B", "B"
+    LVL00: ["3",
+      "8",
+      "B", "R", "R", " ", "R", "B",
+      "B", " ", " ", "R", "R", "B",
+      "B", " ", " ", "B", "O", "R",
+      "R", "R", "R", "R", " ", " ",
+      " ", " ", " ", "O", " ", "O",
+      " ", "O", "O", " ", " ", " ",
+      " ", "B", "B", "B", "B", "B",
+      "O", "R", " ", " ", "B", "B"
     ],
     LVL01: ["5", "3",
       " ", " ", " ", " ", " ", " ",
@@ -672,7 +695,10 @@
     for (const key in levels) {
       const btn = document.createElement("button");
       btn.innerText = key;
-      btn.onclick = () => loadLevel(key);
+      btn.onclick = () => {
+        selectedLevel = levels[key];  // so the "start" button uses this if clicked later
+        loadLevel(key);
+      };
       container.appendChild(btn);
     }
   }
@@ -707,11 +733,17 @@
   }
 
 
-  // LOAD TILES ON BOARD
+  // LOAD TILES ON BOARD - Premade challenge levels
   function loadLevel(levelName) {
     if (!levels[levelName]) return;
 
     board.style.pointerEvents = "auto";
+
+    // Reset timer on level load
+    stopTimer();
+    elapsedSeconds = 0;
+    updateDisplay();
+    startTimer();
 
     const data = levels[levelName];
 
@@ -779,11 +811,81 @@
       }
     }
 
-    setInfo();
+    //setInfo();
+    document.getElementById('puzzle-info').innerText = `Challenge Map ${levelName}`;
     updateVoteTotals();
     updateDistrictBar();
     resizeCanvas();
   }
+  // LOAD TILES FROM ARRAY - Daily level and custom url param levels
+  function loadLevelArray(levelArray) {
+    board.style.pointerEvents = "auto";
+
+    // Reset timer on level load
+    stopTimer();
+    elapsedSeconds = 0;
+    updateDisplay();
+    startTimer();
+
+    const data = levelArray;
+
+    currentDistrictCount = parseInt(data[0]);
+    currentVoteCount = parseInt(data[1]);
+
+    // Update levelData
+    levelData.length = 0;
+    levelData.push(...data);
+
+    // Clear previous state
+    finalizedDistricts = [];
+    board.innerHTML = "";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Rebuild board
+    let index = 2;
+    for (let row = 0; row < boardRows; row++) {
+      for (let col = 0; col < boardCols; col++) {
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+
+        const letter = data[index] || "";
+        tile.dataset.value = letter;
+        tile.innerText = getDisplayCharacter(letter);
+
+        if (letter === "B") {
+          tile.classList.add(helpColorWin === "red" ? "tile-blue" : "tile-red");
+          tile.style.cursor = "pointer";
+        }
+        if (letter === "R") {
+          tile.classList.add(helpColorWin === "red" ? "tile-red" : "tile-blue");
+          tile.style.cursor = "pointer";
+        }
+        if (letter === "O") {
+          tile.classList.add("tile-gray");
+          tile.style.cursor = "pointer";
+        }
+
+        tile.dataset.row = row;
+        tile.dataset.col = col;
+
+        tile.addEventListener("click", () => {
+          if (isTileFinalized(tile)) {
+            removeDistrictContainingTile(tile);
+            drawLines();
+          }
+        });
+
+        board.appendChild(tile);
+        index++;
+      }
+    }
+
+    //setInfo();
+    updateVoteTotals();
+    updateDistrictBar();
+    resizeCanvas();
+  }
+
 
 
   // init and state vars
@@ -814,7 +916,7 @@
 
   // update the info - title
   function setInfo() {
-    document.getElementById('puzzle-info').innerText = `${currentDistrictCount} districts of ${currentVoteCount}`;  // no date
+    document.getElementById('puzzle-info').innerText = `Daily Map ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;  //  #${dayOfMap}
   }
 
   // update the subinfo line - blue & red star count
@@ -824,10 +926,10 @@
 
     const subInfo = document.getElementById('puzzle-subinfo');
     if (helpColorWin === "red") {
-      subInfo.innerHTML = `<b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
+      subInfo.innerHTML = `${currentDistrictCount} districts of ${currentVoteCount}.<br><b style="color: #5988d1">${bTotal}</b> - <b style="color: #e05353">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
     }
     else {
-      subInfo.innerHTML = `<b style="color: #e05353">${bTotal}</b> - <b style="color: #5988d1">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
+      subInfo.innerHTML = `${currentDistrictCount} districts of ${currentVoteCount}.<br><b style="color: #e05353">${bTotal}</b> - <b style="color: #5988d1">${rTotal}</b>. Help <b>${helpColorWin}</b> win!`;
     }
   }
   setInfo();
@@ -1491,7 +1593,8 @@
       helpColorWin = "blue";
     }
     updateVoteTotals();
-    loadLevel('LVL01');
+    //loadLevel('LVL01');
+    loadLevelArray(selectedLevel);
 
     document.body.style.overflowY = 'visible';
     document.getElementById('start-game-button').style.display = 'none';
@@ -1606,9 +1709,6 @@
 
 
   // TIMER
-  let elapsedSeconds = 0;
-  let timerInterval = null;
-
   function updateDisplay() {
     const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
     const seconds = String(elapsedSeconds % 60).padStart(2, '0');
@@ -1627,6 +1727,43 @@
     clearInterval(timerInterval);
     timerInterval = null;
   }
+
+
+
+  // URL PARAM
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const level = urlParams.get('level');
+
+    if (level !== null) {
+      console.log('Level parameter:', level);
+
+      const groupCount = level[0];
+      const groupSize = level[1];
+      const gridString = level.slice(2).replace(/X/g, ' ');
+      const gridArray = Array.from(gridString);
+      const finalArray = [groupCount, groupSize, ...gridArray];
+
+      console.log("Parsed URL level:", finalArray);
+
+      // Set selected level to this parsed one
+      selectedLevel = finalArray;
+      document.getElementById('puzzle-info').innerText = `Custom Map`;  //  #${dayOfMap}
+
+      // Remove the param from the URL bar
+      history.replaceState(null, '', window.location.pathname);
+    } else {
+      console.log("No level param. Using today's level.");
+    }
+  });
+
+
+
+  // RESET TITLE
+  document.getElementById("title-click").addEventListener("click", () => {
+    location.reload();
+  });
+
 </script>
 </body>
 </html>
