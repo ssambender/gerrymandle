@@ -20,18 +20,25 @@ ___
 - Dark theme support
 - Play for either party color
 - Share feature
+- Custom external level editor
+- Load premade levels
 
 ---
 
 
 ### Planned features:
 - [X] Mobile support
-- [ ] Daily randomization
+- [X] Daily randomization
 - [X] Share feature
-- [ ] Saved progress cache
+- [ ] Saved cache for daily progress
 - [X] Timer
+- [ ] Updated share data to include queryparams if custom
+- [ ] Harder level gen
 
 _Feel free to submit pull requests!_
 
 ---
+
+### Known Bugs:
+- [ ] When sharing, the message is always the daily level, even if sharing a win from custom or presaved level
 
