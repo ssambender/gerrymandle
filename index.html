@@ -433,7 +433,7 @@
       • Each district must contain the same number of stars (not counting gray), ties create split districts that can help either side<br>
       • Win a district by controlling more than half its stars, win the map by controlling more than half its districts<br>
       • Tap a district to remove it and try again<br>
-      The daily map changes every day but you can play other challenge levels below or make your own!
+      The daily map changes every day but you can play other challenge maps below or make your own!
     </div>
     <br>
     <div style="font-weight: bold; font-size: 1.5em;">What is Gerrymandering?</div>
@@ -511,6 +511,9 @@
   let dayOfMap = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   //document.getElementById('map-number-label').innerText = dayOfMap;
 
+  let shareNameOfMap = "Daily Map" + dayOfMap.toString();  // name to include in share data
+  let shareLinkOfMap = "https://ssambender.github.io/gerrymandle/";  // link to include in share data
+
 
   // Daily local caches, reset each day:
   let startedDaily = false;  // if true, don't show start modal on page load
@@ -546,7 +549,7 @@
 
 
   // LEVELS objects database
-  const levels = {
+  const LEVELS = {
     LVL01: ["5", "3",
       " ", " ", " ", " ", " ", " ",
       " ", " ", " ", "O", "R", "R",
@@ -717,11 +720,11 @@
   // create one button for each level object in levels database - not permanent
   function generateLevelButtons() {
     const container = document.getElementById("level-buttons");
-    for (const key in levels) {
+    for (const key in LEVELS) {
       const btn = document.createElement("button");
       btn.innerText = key;
       btn.onclick = () => {
-        selectedLevel = levels[key];  // so the "start" button uses this if clicked later
+        selectedLevel = LEVELS[key];  // so the "start" button uses this if clicked later
         starterFunc();
         loadLevel(key);
       };
@@ -761,7 +764,7 @@
 
   // LOAD TILES ON BOARD - Premade challenge levels
   function loadLevel(levelName) {
-    if (!levels[levelName]) return;
+    if (!LEVELS[levelName]) return;
 
     board.style.pointerEvents = "auto";
 
@@ -771,7 +774,7 @@
     updateDisplay();
     startTimer();
 
-    const data = levels[levelName];
+    const data = LEVELS[levelName];
 
     currentDistrictCount = parseInt(data[0]);
     currentVoteCount = parseInt(data[1]);
@@ -840,6 +843,10 @@
     //setInfo();
     document.getElementById('puzzle-info').innerText = `Challenge Map ${levelName}`;
     document.getElementById('map-number-label').innerText = `CHALLENGE MAP ${levelName.toUpperCase()}`;  //  #${dayOfMap}
+
+    shareNameOfMap = `Challenge Map '${levelName}'`;
+    shareLinkOfMap = "https://ssambender.github.io/gerrymandle/?level=" + levelName;
+
     updateVoteTotals();
     updateDistrictBar();
     resizeCanvas();
@@ -1094,6 +1101,8 @@
   function setInfo() {
     document.getElementById('puzzle-info').innerText = `Daily Map ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;  //  #${dayOfMap}
     document.getElementById('map-number-label').innerText = `DAILY MAP ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;  //  #${dayOfMap}
+    shareNameOfMap = `Daily Map ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
+    shareLinkOfMap = "https://ssambender.github.io/gerrymandle/";
   }
 
   // update the subinfo line - blue & red star count
@@ -1347,7 +1356,7 @@
     for (let i = 0; i < finalizedDistricts.length; i++) {
       const district = finalizedDistricts[i];
       if (district.tiles.includes(tile)) {
-        // Log what colord district is removed
+        // Log what color district is removed
         let colorName = "purple";
         if (district.colorClass === "selected-red") colorName = "red";
         else if (district.colorClass === "selected-blue") colorName = "blue";
@@ -1380,7 +1389,7 @@
   let timeSpentString = "0";
   let shareData = {
     title: 'Gerrymandle #' + dayOfMap,
-    text: `🔸I beat map #${dayOfMap}` + ` in ${timeSpentString}. 🗺️ \n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`,
+    text: `🔸I beat ${shareNameOfMap} in ${timeSpentString}. 🗺️ \n🔹Think you can solve it faster?\n${shareLinkOfMap}`,
     //url: 'https://ssambender.github.io/gerrymandle/'
   }
   let sharelink = document.getElementById('share-line');
@@ -1388,8 +1397,7 @@
     event.preventDefault();
 
     // Update the share text with the latest time string
-    // TODO - update shareData text to say either "I beat daily map MM/DD/YY", "I beat a custom map" (with the link updated to include the query param), or "I beat map LVL00" (or name) if premade map
-    shareData.text = `🔸I beat map #${dayOfMap} in ${timeSpentString}. 🗺️\n🔹Think you can solve it faster?\nhttps://ssambender.github.io/gerrymandle/`;
+    shareData.text = `🔸I beat ${shareNameOfMap} in ${timeSpentString}. 🗺️\n🔹Think you can solve it faster?\n${shareLinkOfMap}`;
 
     try {
       await navigator.share(shareData);
@@ -1926,18 +1934,34 @@
     if (level !== null) {
       console.log('Level parameter:', level);
 
-      const groupCount = level[0];
-      const groupSize = level[1];
-      const gridString = level.slice(2).replace(/X/g, ' ');
-      const gridArray = Array.from(gridString);
-      const finalArray = [groupCount, groupSize, ...gridArray];
+      if (level.toUpperCase() in LEVELS) {
+        console.log("levels var is the name of one of the levels in levels object");
 
-      console.log("Parsed URL level:", finalArray);
+        selectedLevel = LEVELS[level];
 
-      // Set selected level to this parsed one
-      selectedLevel = finalArray;
-      document.getElementById('puzzle-info').innerText = `Custom Map`;  //  #${dayOfMap}
-      document.getElementById('map-number-label').innerText = `CUSTOM MAP`;  //  #${dayOfMap}
+        document.getElementById('puzzle-info').innerText = level;
+        document.getElementById('map-number-label').innerText = level.toUpperCase();
+
+        shareNameOfMap = `Challenge Map '${level}'`;
+        shareLinkOfMap = "https://ssambender.github.io/gerrymandle/?level=" + level;
+      }
+      else {
+        const groupCount = level[0];
+        const groupSize = level[1];
+        const gridString = level.slice(2).replace(/X/g, ' ');
+        const gridArray = Array.from(gridString);
+        const finalArray = [groupCount, groupSize, ...gridArray];
+
+        console.log("Parsed URL level:", finalArray);
+
+        // Set selected level to this parsed one
+        selectedLevel = finalArray;
+        document.getElementById('puzzle-info').innerText = `Custom Map`;  //  #${dayOfMap}
+        document.getElementById('map-number-label').innerText = `CUSTOM MAP`;  //  #${dayOfMap}
+
+        shareNameOfMap = "a Custom Map";
+        shareLinkOfMap = "https://ssambender.github.io/gerrymandle/?level=" + level;
+      }
 
       // Remove the param from the URL bar
       history.replaceState(null, '', window.location.pathname);
