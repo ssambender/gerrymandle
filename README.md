@@ -20,8 +20,14 @@ ___
 - Dark theme support
 - Play for either party color
 - Share feature
-- Custom external level editor
+- [Custom external level editor](https://ssambender.github.io/GM-GEN/)
 - Load premade levels
+
+---
+
+<p align="center">
+ <img src="https://raw.githubusercontent.com/ssambender/gerrymandle/refs/heads/main/mockup-red.png" alt="Gerrymandle Mockup" height="500">
+</p>
 
 ---
 
@@ -41,4 +47,3 @@ _Feel free to submit pull requests!_
 
 ### Known Bugs:
 - [ ] When sharing, the message is always the daily level, even if sharing a win from custom or presaved level
-
