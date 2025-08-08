@@ -47,3 +47,9 @@ _Feel free to submit pull requests!_
 
 ### Known Bugs:
 - [ ] When sharing, the message is always the daily level, even if sharing a win from custom or presaved level
+
+---
+
+
+### Fonts used:
+- [Zain](https://fonts.google.com/specimen/Zain)
